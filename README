@@ -1,4 +1,4 @@
-Last updated: August 22, 2010
+Last updated: June 10, 2011
 
 ImpactProbe is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
@@ -160,10 +160,7 @@ download it from their website: http://kohanaframework.org. If you choose to do
 this you should follow the installation guide on the Kohana website and then 
 copy the entire ~/application directory from this package into your Kohana root
 directory (replace the application directory that comes with Kohana). After
-doing this open ~/application/bootstrap.php and make the following changes:
- - Set the default timezone for your application.
- - Set the base_url in the Kohana::init call to reflect the location of the 
-   Kohana folder on your server.
+doing this follow steps (1) and (5) below.
 
 Instructions for setting up Kohana 3.0.7 (included in this package) are 
 described below according to those described in official Kohana installation 
@@ -180,6 +177,9 @@ guide found on their website: http://kohanaframework.org/guide/about.install
 (3) Test your installation by opening the URL you set as the base_url in a 
     browser. You should see the installation page. If it reports any errors, you 
     will need to correct them before continuing.
+    ***IMPORTANT NOTE: ImpactProbe requires that cURL is enabled in PHP. So it 
+    must say "Pass" next to "cURL Enabled" under "Optional Tests". It it does 
+    not you must install cURL into PHP: http://php.net/manual/en/book.curl.php
 
 (4) Once your install page reports that your environment is set up correctly you 
     need to either rename or delete install.php in the root directory.
@@ -220,7 +220,7 @@ configure cron. Open up ~/impact_probe.cron provided with the application and
 change the directory paths to the Kohana index.php file on each line to point to 
 your index.php file (this should be in the root directory of the application). 
 In order for cron to work properly you might also have to change the 'php' 
-command to the full path to your php executable (usually this is 
+command to the full path to your php executable (typically this is 
 /usr/local/bin/php). Then issue this command to initialize a crontab:
 
     crontab impact_probe.cron
