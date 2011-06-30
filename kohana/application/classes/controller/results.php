@@ -449,7 +449,7 @@ class Controller_Results extends Controller {
                 $cluster_order = 'cluster_size';
         }
         
-        // TO DO: parameterize clustering; For example, limit to only docments within a certain data range
+        // TO DO: parameterize clustering; For example, limit to only docments within a certain date range
         
         $this->build_lemur_index($project_id);
         
@@ -542,6 +542,63 @@ class Controller_Results extends Controller {
         }
     }
     
+    // Go through all clustered documents and test which contain negative keyword(s) being tested
+    // TO DO: make this more efficient & do code re-use later
+    private function process_negative_keywords($project_id, $field_data)
+    {
+        // Unmark all documents marked during previous testing
+        $this->model_results->remove_marked_documents($project_id);
+        
+        // Trim whitespace from negative keywords entered into test box
+        $negative_keywords = explode(",", $field_data['negative_keywords_input']);
+        for($i=0; $i<count($negative_keywords); $i++)
+            $negative_keywords[$i] = trim($negative_keywords[$i]);
+        
+        $cluster_db = $this->model_results->get_clusters($project_id);
+        
+        foreach($cluster_db as $row) {
+            $meta_id = $row['meta_id'];
+            $cached_text = $this->model_results->get_cached_text($meta_id);
+            
+            if($this->negative_keyword_exists($negative_keywords, $cached_text)) {
+                // Mark as containing "test" negative keyword(s) in database
+                $this->model_results->mark_document($project_id, $meta_id);
+                
+                // If Apply == TRUE -> delete document (from all relevant tables...refer to $model_params->delete_project()
+                // ...
+            }
+        }
+        
+        // If Apply == TRUE -> add negative keyword(s) to project
+        // ...
+    }
+    //Returns TRUE if any of the given $negative_keywords exist in given $text 
+    private function negative_keyword_exists(Array $negative_keywords, $text)
+    {
+        foreach($negative_keywords as $negative_keyword) {
+            $num_occurances = 0;
+            if(substr($negative_keyword, 0, 1) == '"' AND substr($negative_keyword, -1, 1) == '"') {
+                // Phrase is quoted (exact): find total number of occurances
+                $negative_keyword = str_replace('"', '', $negative_keyword); // remove quotes
+                $num_occurances = preg_match_all("/\b(".$negative_keyword.")\b/ie", $text, $matches);
+            } else {
+                // Phrase NOT quoted: make sure post contains ALL words in phrase
+                $keywords_phrases_arr = explode(" ", $negative_keyword); 
+                $num_occurances = 1;
+                foreach($keywords_phrases_arr as $keyword_phrase_sub) {
+                    $num_occurances_sub = preg_match_all("/\b(".$keyword_phrase_sub.")\b/ie", $text, $matches);
+                    if(!$num_occurances_sub) {
+                        $num_occurances = 0;
+                        break;
+                    }
+                }
+            }
+            if($num_occurances > 0)
+            	return TRUE;
+        }
+        return FALSE;
+    }
+    
     public function action_cluster_view($project_id = 0)
     {
         $cluster_order = (array_key_exists('cluster_order', $_GET)) ? $_GET['cluster_order'] : 'arbitrarily';
@@ -553,6 +610,26 @@ class Controller_Results extends Controller {
         if(count($project_data) == 0 || count($cluster_log) == 0) {
             echo "<p>Project with this ID does not exist.</p>"; 
         } else {
+            // START negative keyword processing
+            $rebuild_chart = 0;
+            if($_POST) {
+                $post = Validate::factory($_POST);
+                $this->field_data = $post->as_array();
+                $post->rule('negative_keywords_input', 'not_empty');
+                if ($post->check()) {
+                    $this->process_negative_keywords($project_id, $this->field_data);
+                    $rebuild_chart = 1;
+                }
+            } else {
+                // Unmark all documents marked during previous testing (if any exist)
+                if($this->model_results->marked_document_exists($project_id)) {
+                    $this->model_results->remove_marked_documents($project_id);
+                    $rebuild_chart = 1;
+                }
+                $this->field_data = array(
+                    'negative_keywords_input' => '');
+            } // END negative keyword processing
+            
             $project_data = array_pop($project_data);
             $cluster_log = array_pop($cluster_log);
             $cluster_log['date_clustered'] = date($this->date_format, $cluster_log['date_clustered']);
@@ -573,7 +650,7 @@ class Controller_Results extends Controller {
             
             // Get chart data & params
             $chart_file = Kohana::config('myconf.path.charts')."/cluster_$project_id.gch";
-            if(!file_exists($chart_file)) {
+            if($rebuild_chart || !file_exists($chart_file)) {
                 // Find max & min cluster sizes (for normalization)
                 $clusters_sorted_asc = $this->order_array_numeric($clusters, 'num_docs', 'ASC');
                 $min_cluster_size_data = current($clusters_sorted_asc);
@@ -588,12 +665,13 @@ class Controller_Results extends Controller {
                 
                 // Generate chart data
                 $num_clusters = 0;
-                $x_vals = ""; $y_vals = ""; $size_vals = ""; $cluster_ids = ""; $cluster_sizes = "";
+                $x_vals = ""; $y_vals = ""; $size_vals = ""; $color_vals = ""; $cluster_ids = ""; $cluster_sizes = "";
                 $min_dot_size = 4; // So the smallest can actually be seen
+                
                 foreach($clusters as $cluster_id => $cluster_data) {
                     if($cluster_data['num_docs'] > 1) {
                         $num_clusters++;
-                       
+                        
                         // Normalize dot sizes they are between 0-100
                         if($max_cluster_size == $min_cluster_size) {
                             $dot_size_normalized = 50; // All clusters have size 1
@@ -609,10 +687,20 @@ class Controller_Results extends Controller {
                         $x_vals .= "$num_clusters,";
                         $y_vals .= "$cluster_quality,";
                         $size_vals .= "$dot_size_normalized,";
+                        // TEMP MAKE CLEANER!!!
+                        // Get color of cluster (for testing negative keywords)
+                        if($cluster_data['num_docs'] == $cluster_data['num_marked']) {
+                            $color_vals .= "FF0000|";
+                        } elseif($cluster_data['num_marked'] > 0) {
+                            $hex_value = $this->percentage_to_hex_color($cluster_data['num_marked'] / $cluster_data['num_docs']);
+                            $color_vals .= "$hex_value|";
+                        } else {
+                            $color_vals .= "0000FF|";
+                        }
                     }
                 }
                 // Remove trailing commas
-                $x_vals = substr($x_vals, 0, -1); $y_vals = substr($y_vals, 0, -1); $size_vals = substr($size_vals, 0, -1); $cluster_ids = substr($cluster_ids, 0, -1); $cluster_sizes = substr($cluster_sizes, 0, -1); 
+                $x_vals = substr($x_vals, 0, -1); $y_vals = substr($y_vals, 0, -1); $size_vals = substr($size_vals, 0, -1); $color_vals = substr($color_vals, 0, -1); $cluster_ids = substr($cluster_ids, 0, -1); $cluster_sizes = substr($cluster_sizes, 0, -1); 
                 
                 $x_axis_midpoint = round(($num_clusters/2));
                 $chart_data = array(
@@ -624,12 +712,13 @@ class Controller_Results extends Controller {
                     "range" => "0,$num_clusters,0,1,1,100", // min,max(x-axis), min,max(y-axis), min,max(dot size)
                     "range_display" => "0,1,$num_clusters|2,0,1", // axis_id,min,max|...
                     "dot_style" => "o,0000FF,0,,80",
-                    "data" => "t:$x_vals|$y_vals|$size_vals" // x-values | y-values | dot size (0-100)
+                    "data" => "t:$x_vals|$y_vals|$size_vals", // x-values | y-values | dot size (0-100)
+                    "colors" => $color_vals
                 );
                 
                 // Save chart data as text file (.gch) to be read by show_chart.php
                 $fh_chartfile = fopen($chart_file, 'w') or die("$chart_file: cannot open file for writing");
-                fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchxl=".$chart_data['axis_labels']."\nchxp=".$chart_data['label_pos']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchm=".$chart_data['dot_style']."\nchd=".$chart_data['data']."\nmpids=$cluster_ids\nmps=$cluster_sizes");
+                fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchxl=".$chart_data['axis_labels']."\nchxp=".$chart_data['label_pos']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchm=".$chart_data['dot_style']."\nchd=".$chart_data['data']."\nchco=".$chart_data['colors']."\nmpids=$cluster_ids\nmps=$cluster_sizes");
                 fclose($fh_chartfile);
             }
             
@@ -639,11 +728,44 @@ class Controller_Results extends Controller {
 <map name="chart_map">'.$this->generate_cluster_map($project_id, $chid, $chart_file).'</map>';
             
             $view->page_content->project_data = $project_data;
+            $view->page_content->field_data = $this->field_data;
             $view->page_content->cluster_log = $cluster_log;
             $view->page_content->singleton_clusters = $singleton_clusters;
             $view->page_content->chart_html = $chart_html;
             $this->request->response = $view;
         }
+    }
+    
+    private function percentage_to_hex_color($decimal)
+    {
+        $theColorBegin = 0x0000ff;
+        $theColorEnd = 0xff0000;
+        $theNumSteps = 100;
+        
+        $percent_val = round($decimal, 2) * 100; // Get percentage as a number between 0 and 100
+        //if($percent_val == 1)
+            //return sprintf("%06X", $theColorEnd);
+        
+        $theR0 = ($theColorBegin & 0xff0000) >> 16;
+        $theG0 = ($theColorBegin & 0x00ff00) >> 8;
+        $theB0 = ($theColorBegin & 0x0000ff) >> 0;
+        $theR1 = ($theColorEnd & 0xff0000) >> 16;
+        $theG1 = ($theColorEnd & 0x00ff00) >> 8;
+        $theB1 = ($theColorEnd & 0x0000ff) >> 0;
+        
+        $theR = $this->interpolate($theR0, $theR1, $percent_val, $theNumSteps);
+        $theG = $this->interpolate($theG0, $theG1, $percent_val, $theNumSteps);
+        $theB = $this->interpolate($theB0, $theB1, $percent_val, $theNumSteps);
+        $theVal = ((($theR << 8) | $theG) << 8) | $theB;
+        $hex_color = sprintf("%06X", $theVal);
+        return $hex_color;
+    }
+    // Helper function for percentage_to_hex_color
+    private function interpolate($pBegin, $pEnd, $pStep, $pMax) {
+        if ($pBegin < $pEnd)
+            return (($pEnd - $pBegin) * ($pStep / $pMax)) + $pBegin;
+        else
+            return (($pBegin - $pEnd) * (1 - ($pStep / $pMax))) + $pEnd;
     }
     
     // Get clustering data & re-organize results so there is only one row per metadata entry & calculate stats
@@ -656,7 +778,7 @@ class Controller_Results extends Controller {
         $clusters = array();
         foreach($cluster_db as $row) {
             if(array_key_exists($row['cluster_id'], $clusters)) {
-                // Add cluster ata to existing cluster entry
+                // Add cluster data to existing cluster entry
                 array_push($clusters[$row['cluster_id']]['docs'], array($row['meta_id'] => $row['score']));
                 $clusters[$row['cluster_id']]['total_score'] += $row['score'];
                 $clusters[$row['cluster_id']]['num_docs']++;
@@ -665,9 +787,12 @@ class Controller_Results extends Controller {
                 $clusters[$row['cluster_id']] = array(
                     'docs' => array($row['meta_id'] => $row['score']),
                     'total_score' => $row['score'],
-                    'num_docs' => 1
+                    'num_docs' => 1,
+                    'num_marked' => 0
                 );
             }
+            if($this->model_results->document_is_marked($row['meta_id']))
+                $clusters[$row['cluster_id']]['num_marked']++;
         }
         return $clusters;
     }
@@ -739,7 +864,8 @@ class Controller_Results extends Controller {
                 $text = $this->model_results->get_cached_text($meta_id);
                 array_push($singleton_clusters, array(
                     'meta_id' => $meta_id,
-                    'text' => $text
+                    'text' => $text,
+                    'marked' => $this->model_results->document_is_marked($meta_id)
                 ));
             }
         }
@@ -779,10 +905,17 @@ class Controller_Results extends Controller {
             );
         } 
         
+        $cluster_data = $this->model_results->get_cluster_summary($project_id, $cluster_id, $params);
+        $i = 0;
+        foreach($cluster_data as $cluster) {
+            $cluster_data[$i]['marked'] = $this->model_results->document_is_marked($cluster['meta_id']);
+            $i++;
+        }
+        
         $view->singleton_display = 0;
         $view->field_data = $field_data;
         $view->errors = $form_errors;
-        $view->cluster_data = $this->model_results->get_cluster_summary($project_id, $cluster_id, $params);
+        $view->cluster_data = $cluster_data;
         $this->request->response = $view;
     }
     

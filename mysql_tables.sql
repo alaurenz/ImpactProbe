@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS `keywords_phrases` (
   `keyword_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `project_id` int(10) unsigned NOT NULL,
   `keyword_phrase` varchar(250) NOT NULL,
+  `is_negative` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `active` tinyint(1) unsigned NOT NULL DEFAULT '1',
   `exact_phrase` tinyint(1) unsigned NOT NULL DEFAULT '1',
   `date_added` int(10) NOT NULL,
@@ -145,6 +146,18 @@ CREATE TABLE IF NOT EXISTS `keyword_metadata` (
   `keyword_id` int(10) unsigned NOT NULL,
   `num_occurrences` int(8) unsigned NOT NULL,
   KEY `meta_id` (`meta_id`,`keyword_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `mark_negative_keywords`
+--
+
+CREATE TABLE IF NOT EXISTS `mark_negative_keywords` (
+  `meta_id` int(10) unsigned NOT NULL,
+  `project_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`meta_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------

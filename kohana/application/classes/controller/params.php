@@ -66,7 +66,10 @@ class Controller_Params extends Controller {
                     'active' => $this->field_data['gather_now']
                 ));
                 
-                $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases']);
+                $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases'], 0);
+                
+                if(array_key_exists('negative_keywords', $this->field_data))
+                    $this->model_params->insert_keywords($project_id, $this->field_data['negative_keywords'], 1);
                 
                 // Enable selected API data sources for this project
                 foreach($api_sources as $api_source) {
@@ -74,8 +77,8 @@ class Controller_Params extends Controller {
                         $this->model_params->insert_active_api_source($api_source['api_id'], $project_id);
                 }
                 
-                if(array_key_exists('rss_feed', $this->field_data))
-                    $this->model_params->insert_rss_feeds($project_id, $this->field_data['rss_feeds']);
+                if(array_key_exists('api_rss_feed', $this->field_data))
+                	$this->model_params->insert_rss_feeds($project_id, $this->field_data['rss_feeds']);
                 
                 // Create directory to store cached text & make it writable (must be done using system command for permissions work properly)
                 $system_cmd = "mkdir -m 777 ".Kohana::config('myconf.lemur.docs')."/$project_id";
@@ -139,7 +142,7 @@ class Controller_Params extends Controller {
             $this->project_data = array_pop($project_data);
             
             $api_sources = $this->model_params->get_api_sources();
-            $this->field_data['keyword_phrase_data'] = $this->model_params->get_keyword_phrase_data($project_id);
+            $this->field_data['keyword_phrase_data'] = $this->model_params->get_keyword_phrase_data($project_id); // Contains data for both regular and negative keywords
             $this->field_data['rss_feed_data'] = $this->model_params->get_rss_feed_data($project_id);
             
             $this->errors = "";
@@ -176,12 +179,27 @@ class Controller_Params extends Controller {
                             $updated_keywords_phrases[$keyword_phrase] = 0; // Keyword set as deactivated
                     }
                     if(count($new_keywords_phrases) > 0)
-                        $this->model_params->insert_keywords($project_id, $new_keywords_phrases); 
-                    $this->model_params->update_keywords($updated_keywords_phrases); 
+                        $this->model_params->insert_keywords($project_id, $new_keywords_phrases, 0); 
+                    $this->model_params->update_keywords($updated_keywords_phrases);
+                    
+                    // Add newly added negative keywords and remove those that were deleted
+                    if(array_key_exists('negative_keywords', $this->field_data)) {
+                        $negative_keywords = $this->model_params->get_negative_keywords($project_id);
+                        foreach ($negative_keywords as $keyword_id) {
+                            if(!in_array($keyword_id, $this->field_data['negative_keywords']))
+                                $this->model_params->remove_keyword($keyword_id);
+                        }
+                        $new_keywords_phrases = array();
+                        foreach ($this->field_data['negative_keywords'] as $negative_keyword) {
+                            if(!($negative_keyword > 0))
+                                array_push($new_keywords_phrases, $negative_keyword);
+                        }
+                        $this->model_params->insert_keywords($project_id, $new_keywords_phrases, 1);
+                    }
                     
                     // Add new RSS feed URLs and activate/deactivate old
                     $new_rss_feeds = array(); $updated_rss_feeds = array(); 
-                    if(array_key_exists('rss_feeds', $this->field_data)) {
+                    if(array_key_exists('api_rss_feed', $this->field_data)) {
                         foreach($this->field_data['rss_feeds'] as $rss_feed) {
                             if($rss_feed > 0)
                                 $updated_rss_feeds[$rss_feed] = 1; // RSS feed set as active
@@ -218,6 +236,7 @@ class Controller_Params extends Controller {
                 $this->field_data = array_merge($this->field_data, array(
                     'project_title' => $this->project_data['project_title'],
                     'keywords_phrases' => $this->model_params->get_active_keywords($project_id),
+                    'negative_keywords' => $this->model_params->get_negative_keywords($project_id),
                     'deactivated_keywords_phrases' => $this->model_params->get_deactivated_keywords($project_id),
                     'rss_feeds' => $this->model_params->get_active_rss_feeds($project_id),
                     'deactivated_rss_feeds' => $this->model_params->get_deactivated_rss_feeds($project_id),

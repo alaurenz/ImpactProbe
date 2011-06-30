@@ -58,8 +58,16 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
    <option value="arbitrarily"<? if($cluster_log['order'] == 'arbitrarily') { echo " selected"; } ?>>scatter clusters</option>
    <option value="cluster_size"<? if($cluster_log['order'] == 'cluster_size') { echo " selected"; } ?>>order by cluster size</option>
 </select>
-<input type="submit" id="submit_btn" name="submit_btn" value="Recluster">
-</p>
+<input type="submit" id="submit_btn" name="submit_btn" value="Recluster"> 
+[help]</p>
+</form>
+
+<form name="test_negative_keywords_form" id="test_negative_keywords_form" method="post" action="<?= Url::base().'index.php/results/cluster_view/'.$project_data['project_id'] ?>">
+<b>Negative Keyword(s):</b>
+<input name="negative_keywords_input" type="text" id="negative_keywords_input" value='<?= $field_data['negative_keywords_input'] ?>' size="18">
+<input type="submit" id="test_btn" name="test_btn" value="Test">
+<!--<input type="submit" id="apply_btn" name="apply_btn" value="Apply">-->  
+[help] &nbsp;&nbsp;&nbsp;<img src="<?= Kohana::config('myconf.url.images'); ?>cluster_color_gradient.png"></p>
 </form>
 
 <?= $chart_html ?>

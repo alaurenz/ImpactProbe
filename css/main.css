@@ -47,7 +47,13 @@ html, body {
 
 #keywords_phrases, #deactivated_keywords_phrases {
     width:276px;
-    height:150px;
+    height:80px;
+    background-color:#317DFF;
+}
+#negative_keywords {
+    width:276px;
+    height:80px;
+    background-color:#FF595C;
 }
 #rss_feeds, #deactivated_rss_feeds {
     width:327px;

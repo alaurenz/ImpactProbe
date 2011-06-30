@@ -124,6 +124,24 @@ class Model_Results extends Model {
         return $result[0]['text'];
     }
     
+    public function mark_document($project_id, $meta_id)
+    {
+        DB::insert('mark_negative_keywords', array('meta_id', 'project_id'))->values(array($meta_id, $project_id))->execute();
+    }
+    public function document_is_marked($meta_id)
+    {
+        return DB::select(DB::expr('COUNT(meta_id) AS total'))->from('mark_negative_keywords')->where('meta_id','=',$meta_id)->execute()->get('total');
+    }
+    public function marked_document_exists($meta_id)
+    {
+        $result = DB::select('project_id')->from('mark_negative_keywords')->limit(1)->execute();
+        return (count($result) == 1);
+    }
+    public function remove_marked_documents($project_id)
+    {
+        DB::delete('mark_negative_keywords')->where('project_id','=',$project_id)->execute();
+    }
+    
     public function insert_clusters(Array $cluster_data, $project_id)
     {
         $i = 0;
@@ -135,10 +153,7 @@ class Model_Results extends Model {
                 'score' => $cluster_info[2],
                 'project_id' => $project_id
             );
-            //echo "$i: <br>";
-            //echo DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db)); exit;
             DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
-            //if($i > 5500) break;
             $i++;
         }
     }
@@ -158,7 +173,7 @@ class Model_Results extends Model {
     
     public function get_cluster_summary($project_id, $cluster_id, $params)
     {
-         $query = DB::select('doc_clusters.score', 'cached_text.text')->from('doc_clusters')
+         $query = DB::select('doc_clusters.meta_id', 'doc_clusters.score', 'cached_text.text')->from('doc_clusters')
                               ->where('project_id','=',$project_id)
                               ->where('cluster_id','=',$cluster_id)
                               ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');

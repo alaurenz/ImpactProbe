@@ -69,7 +69,12 @@ if($num_clusters > 0) {
     
     $i = 1;
     foreach($cluster_data as $cluster) { ?>
-        <div class="cell_unit <?= ($i % 2 == 0) ? 'bg_white' : 'bg_grey' ?>"><?= $cluster['text'] ?></div><? 
+        <? if($cluster['marked'])
+            $bg_color = 'bg_red';
+        else
+            $bg_color = ($i % 2 == 0) ? 'bg_white' : 'bg_grey';
+        ?>
+        <div class="cell_unit <?= $bg_color ?>"><?= $cluster['text'] ?></div><? 
         $i++;
     }
 

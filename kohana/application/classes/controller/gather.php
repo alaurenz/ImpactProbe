@@ -74,7 +74,9 @@ class Controller_Gather extends Controller {
             $this->project_data = array_pop($project_data);
             $this->project_id = $this->project_data['project_id'];
             
-            $this->keywords_phrases = $this->model_gather->get_active_keywords($this->project_id); // Returns multidimensional array of data for each keyword/phrase
+            // Returns multidimensional array of data for each [negative or regular] keyword/phrase
+            $this->keywords_phrases = $this->model_gather->get_active_keywords($this->project_id); 
+            $this->negative_keywords = $this->model_gather->get_negative_keywords($this->project_id);
         } else {
             $this->project_data = '';
         } 
@@ -91,14 +93,29 @@ class Controller_Gather extends Controller {
         $results_per_page = "&rpp=100"; // Max is 100
         $lang = ""; //"&lang=en"; // Limit search to English tweets
         
-        $total_results_gathered = 0;
+        // Add single or exact phrase negative keywords to query string
+        // NOTE: mutiple non-exact negative keywords are not supported by Twitter API as with
+        // regular keywords, this type of negative keyword filtering will be performed later 
+        $neg_keywords_str = "";
+        foreach($this->negative_keywords as $negative_keyword) {
+            $word_split = explode(" ", $negative_keyword['keyword_phrase']);
+            if(count($word_split) > 1) { // Is phrase (more than 1 word)
+                // Check if searching "exact phrase" -> if so add quotes
+                if($negative_keyword['exact_phrase'])
+                    $neg_keywords_str .= '+-"'.urlencode($negative_keyword['keyword_phrase']).'"';
+            }
+            else { // Is single keyword
+                $neg_keywords_str .= '+-'.urlencode($negative_keyword['keyword_phrase']);
+            }
+        }
         
-        // Add keywords/phrases to query string 
-        $keyword_str = "";
+        // Search Twitter API for each keyword/phrase (1 query per keyword/phrase)
         $num_keywords = count($this->keywords_phrases);
         $i = 0;
         foreach($this->keywords_phrases as $keyword_phrase) {
-            $i++;
+        	$i++;
+        	$keyword_str = "";
+        	$total_results_gathered = 0;
             $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
             if(count($word_split) > 1) { // Is phrase (more than 1 word)
                 // Check if searching "exact phrase" -> if so add quotes
@@ -110,83 +127,75 @@ class Controller_Gather extends Controller {
             else { // Is single keyword
                 $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
             }
-            if($i < $num_keywords) {
-                $keyword_str .= '+OR+';
-            }
-        }
-        
-        //
-        // TO DO: Add negative keywords to query string
-        // &q=...+-negkey1+-negkey2+...
-        // 
-
-        $this->api_connect_error = 0;
-        $cur_page = 1;
-        while(TRUE) {
-            // Compile request URL
-            $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
-            print "Query: $request_url\n";
             
-            $response = $this->api_connect($request_url, 'get');
-            // Stop trying to gather if there was a connection failure
-            if($this->api_connect_error) { break; }
-            
-            // Loop through each tweet (if there are results on this page)
-            $json = json_decode($response, true);
-            $num_results = count($json['results']);
-            if($num_results > 0) {
-                
-                foreach($json['results'] as $tweet_data) {
-                    
-                    if(array_key_exists('from_user', $tweet_data) AND array_key_exists('id', $tweet_data)) {
-                        $username = $tweet_data['from_user'];
-                        $tweet_id = $tweet_data['id'];
-                        $tweet_url = "http://twitter.com/$username/status/$tweet_id";
-                    } else { 
-                        print "ERROR: No tweet ID and/or user ID found. Cannot use.\n";
-                        continue; 
-                    }
-                    if(array_key_exists('created_at', $tweet_data)) {
-                        $date_published = $tweet_data['created_at'];
-                        $date_published_timestamp = strtotime($date_published); // $this->date_to_timestamp($date_published);
-                    } else { $date_published_timestamp = 0; }
-                    $tweet_text = (array_key_exists('text', $tweet_data)) ? $tweet_data['text'] : '';
-                    $tweet_lang = (array_key_exists('iso_language_code', $tweet_data)) ? $tweet_data['iso_language_code'] : '';
-                    // Geolocation info
-                    $place = "";
-                    if(array_key_exists('place', $tweet_data)) {
-                        foreach($tweet_data['place'] as $place_data) {
-                            $place .= "$place_data ";
-                        }
-                    }
-                    
-                    $require_keywords = 0;
-                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, $require_keywords, array(
-                        'project_id' => $this->project_id,
-                        'api_id' => $api_id,
-                        'date_published' => $date_published_timestamp,
-                        'date_retrieved' => time(),
-                        'lang' => $tweet_lang,
-                        'geolocation' => $place
-                    ));
-                    
-                }
-                $cur_page++;
-                
-            } else {
-                // No results on this page so we are DONE!
-                break;
-            }
-        }
-        
-        // Add entry to gather log (as long as no errors occurred)
-        if(!$this->api_connect_error) {
-            $this->model_gather->insert_gather_log(array(
-                'project_id' => $this->project_id,
-                'search_query' => $request_url,
-                'date' => time(),
-                'results_gathered' => $total_results_gathered
-            ));
+            $this->api_connect_error = 0;
+	        $cur_page = 1;
+	        while(TRUE) {
+	            // Compile request URL
+	            $request_url = $api_url.'?q='.$keyword_str.$neg_keywords_str.$lang.$results_per_page.'&page='.$cur_page;
+	            print "Query: $request_url\n";
+	            
+	            $response = $this->api_connect($request_url, 'get');
+	            // Stop trying to gather if there was a connection failure
+	            if($this->api_connect_error) { break; }
+	            
+	            // Loop through each tweet (if there are results on this page)
+	            $json = json_decode($response, true);
+	            $num_results = count($json['results']);
+	            if($num_results > 0) {
+	                
+	                foreach($json['results'] as $tweet_data) {
+	                    
+	                    if(array_key_exists('from_user', $tweet_data) AND array_key_exists('id', $tweet_data)) {
+	                        $username = $tweet_data['from_user'];
+	                        $tweet_id = $tweet_data['id'];
+	                        $tweet_url = "http://twitter.com/$username/status/$tweet_id";
+	                    } else { 
+	                        print "ERROR: No tweet ID and/or user ID found. Cannot use.\n";
+	                        continue; 
+	                    }
+	                    if(array_key_exists('created_at', $tweet_data)) {
+	                        $date_published = $tweet_data['created_at'];
+	                        $date_published_timestamp = strtotime($date_published); // $this->date_to_timestamp($date_published);
+	                    } else { $date_published_timestamp = 0; }
+	                    $tweet_text = (array_key_exists('text', $tweet_data)) ? $tweet_data['text'] : '';
+	                    $tweet_lang = (array_key_exists('iso_language_code', $tweet_data)) ? $tweet_data['iso_language_code'] : '';
+	                    // Geolocation info
+	                    $place = "";
+	                    if(array_key_exists('place', $tweet_data)) {
+	                        foreach($tweet_data['place'] as $place_data) {
+	                            $place .= "$place_data ";
+	                        }
+	                    }
+	                    
+	                    $require_keywords = 0;
+	                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, $require_keywords, array(
+	                        'project_id' => $this->project_id,
+	                        'api_id' => $api_id,
+	                        'date_published' => $date_published_timestamp,
+	                        'date_retrieved' => time(),
+	                        'lang' => $tweet_lang,
+	                        'geolocation' => $place
+	                    ));
+	                    
+	                }
+	                $cur_page++;
+	                
+	            } else {
+	                // No results on this page so we are DONE!
+	                break;
+	            }
+	        }
+	        
+	        // Add entry to gather log (as long as no errors occurred)
+	        if(!$this->api_connect_error) {
+	            $this->model_gather->insert_gather_log(array(
+	                'project_id' => $this->project_id,
+	                'search_query' => $request_url,
+	                'date' => time(),
+	                'results_gathered' => $total_results_gathered
+	            ));
+	        }
         }
     }
     
@@ -314,7 +323,9 @@ class Controller_Gather extends Controller {
    /***********************************
     ** NEW GATHERING METHOD TEMPLATE **
     ***********************************
-    Copy the method below and modify it as necessary (please leave a copy of the template). Rename the method to have the same name given in the column `gather_method_name` from the `api_sources` database table. 
+    Copy the method below and modify it as necessary (please leave a copy of the template). 
+    Rename the method to have the same name given in the column `gather_method_name` from 
+    the `api_sources` database table. 
     ***********************************
     private function method_name()
     {
@@ -322,11 +333,11 @@ class Controller_Gather extends Controller {
         $api_id = ; // This value is listed in the database table `api_source` (if you haven't yet created a row for this gathering method do so now) 
         $api_url = "";
         
-        $total_results_gathered = 0;
-        
         // Generate [GET] query string from keywords defined by the user
-        // If your API takes a POST query you will have to send your keyword data as an array of key/value pairs and pass it to the api_connect() method below 
-        // You will like have to modify this section significantly according to the syntax of the API
+        // If your API takes a POST query you will have to send your keyword data as an array 
+        // of key/value pairs and pass it to the api_connect() method below. You will like 
+        // have to modify this section significantly according to the syntax of the API
+        $total_results_gathered = 0;
         $keyword_str = "";
         $num_keywords = count($this->keywords_phrases);
         $i = 0;
@@ -343,11 +354,19 @@ class Controller_Gather extends Controller {
             else { // Is single keyword
                 $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
             }
+            
+            // If the API does not support "OR" you can issue separate queries for
+            // each keyword. To do this replace the if statement below with the 
+            // "Connect to API & gather data" code below. You must also move the 
+            // following lines inside the "keywords_phrases" for loop:
+            // 	  $keyword_str = "";
+        	// 	  $total_results_gathered = 0;
             if($i < $num_keywords) {
                 $keyword_str .= '+OR+';
             }
         }
         
+        // START Connect to API & gather data
         $this->api_connect_error = 0;
         $cur_page = 1;
         while(TRUE) {
@@ -397,6 +416,7 @@ class Controller_Gather extends Controller {
                 'results_gathered' => $total_results_gathered
             ));
         }
+        // END Connect to API
     }
     ***************************************
     ** END NEW GATHERING METHOD TEMPLATE **
@@ -480,34 +500,39 @@ class Controller_Gather extends Controller {
                 // No keywords/phrases found & $require_keywords set to 1
                 print "no keywords/phrases: $url\n";
             } else {
-                print "added: $url\n";
-                $new_entry_added = 1;
-                
-                // Add new URL & metadata entry 
-                $url_id = $this->model_gather->insert_url(array(
-                    'project_id' => $this->project_id, 
-                    'url' => $url
-                ));
-                $metadata['url_id'] = $url_id;
-                $meta_id = $this->model_gather->insert_metadata($metadata);
-                
-                // Add metadata for each keyword found in $cache_text
-                if(count($keyword_metadata_entries) > 0) {
-                    foreach($keyword_metadata_entries as $keyword_metadata_entry) {
-                        $keyword_metadata_entry['meta_id'] = $meta_id;
-                        $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
-                    }
-                }
-                
-                $this->model_gather->insert_cached_text(array(
-                    'meta_id' => $meta_id,
-                    'text' => $cache_text
-                ));
-                $this->model_gather->save_cached_text(array(
-                    'project_id' => $this->project_id,
-                    'meta_id' => $meta_id,
-                    'text' => $cache_text
-                ));
+                // Check for presence of negative keywords
+                if($this->negative_keyword_exists($cache_text)) {
+                	print "neg keyword found: $url\n";
+                } else {
+	                print "added: $url\n";
+	                $new_entry_added = 1;
+	                
+	                // Add new URL & metadata entry 
+	                $url_id = $this->model_gather->insert_url(array(
+	                    'project_id' => $this->project_id, 
+	                    'url' => $url
+	                ));
+	                $metadata['url_id'] = $url_id;
+	                $meta_id = $this->model_gather->insert_metadata($metadata);
+	                
+	                // Add metadata for each keyword found in $cache_text
+	                if(count($keyword_metadata_entries) > 0) {
+	                    foreach($keyword_metadata_entries as $keyword_metadata_entry) {
+	                        $keyword_metadata_entry['meta_id'] = $meta_id;
+	                        $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
+	                    }
+	                }
+	                
+	                $this->model_gather->insert_cached_text(array(
+	                    'meta_id' => $meta_id,
+	                    'text' => $cache_text
+	                ));
+	                $this->model_gather->save_cached_text(array(
+	                    'project_id' => $this->project_id,
+	                    'meta_id' => $meta_id,
+	                    'text' => $cache_text
+	                ));
+            	}
             }
         }
         return $new_entry_added;
@@ -543,6 +568,32 @@ class Controller_Gather extends Controller {
             }
         }
         return $keyword_metadata;
+    }
+    
+    // Returns TRUE if 1 or more negative keywords exist in given $text 
+    private function negative_keyword_exists($text)
+    {
+        foreach($this->negative_keywords as $negative_keyword) {
+            $num_occurances = 0;
+            if($negative_keyword['exact_phrase']) {
+                // Phrase set as exact: find total number of occurances
+                $num_occurances = preg_match_all("/\b(".$negative_keyword['keyword_phrase'].")\b/ie", $text, $matches);
+            } else {
+                // Phrase NOT set as exact: make sure post contains ALL words in phrase
+                $keywords_phrases_arr = explode(" ", $negative_keyword['keyword_phrase']); 
+                $num_occurances = 1;
+                foreach($keywords_phrases_arr as $keyword_phrase_sub) {
+                    $num_occurances_sub = preg_match_all("/\b(".$keyword_phrase_sub.")\b/ie", $text, $matches);
+                    if(!$num_occurances_sub) {
+                        $num_occurances = 0;
+                        break;
+                    }
+                }
+            }
+            if($num_occurances > 0)
+            	return TRUE;
+        }
+        return FALSE;
     }
     
     private function date_to_timestamp($date_str) 

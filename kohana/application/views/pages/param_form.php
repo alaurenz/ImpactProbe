@@ -42,6 +42,25 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             });
         });
         
+        $('#add_neg_keyword_btn').click(function() {
+            var new_keyword = $('#add_neg_keyword_text').val().replace(/["]/g,'').trim(); // Remove quotes(") and trim whitespace
+            if(new_keyword) {
+                if($('#neg_exact_phrase').is(':checked')) {
+                    new_keyword = '"' + new_keyword + '"';
+                    $('#neg_exact_phrase').attr('checked', false);
+                }
+                $("#negative_keywords").addOption(new_keyword, new_keyword); // add new keyword to combo box
+                $('#add_neg_keyword_text').val(""); // clear 'add keyword' textfield
+            }
+        });
+        
+        $('#remove_neg_keyword_btn').click(function() {
+            // remove selected keywords from combobox
+            $("#negative_keywords option:selected").each(function () {
+                $("#negative_keywords").removeOption($(this).val());
+            });
+        });
+        
         <? if($mode == "Modify") { ?>
         $('#deactivate_keyword_btn').click(function() {
             // move selected keywords from active to deactivated combobox
@@ -126,6 +145,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             <? if($mode == "Modify") { ?>
                 $("#deactivated_keywords_phrases *").attr("selected","selected");
                 $("#deactivated_rss_feeds *").attr("selected","selected");
+                $("#negative_keywords *").attr("selected","selected");
             <? } ?>
         });
     });
@@ -153,7 +173,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <table width="600" border="0" cellspacing="0" cellpadding="3">
 <tr>
     <td align="left">
-    <b>Keywords and Phrases</b><br>
+    <b>Keywords and Phrases</b> [help]<br>
     <input type="text" name="add_keyword_text" id="add_keyword_text" value="">
     <label for="exact_phrase"><input name="exact_phrase" id="exact_phrase" type="checkbox" value="1">exact</label>
     <input type="button" id="add_keyword_btn" name="add_keyword_btn" value="&#043;">
@@ -161,7 +181,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <input type="button" id="remove_keyword_btn" name="remove_keyword_btn" value="&#8722;">
     <br>
     <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-        <? if(array_key_exists('keywords_phrases', $field_data)) {
+     <? if(array_key_exists('keywords_phrases', $field_data)) {
             foreach($field_data['keywords_phrases'] as $keyword_phrase) {
                 echo '<option value="'.$keyword_phrase.'">'.$keyword_phrase.'</option>';
             }
@@ -171,7 +191,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
     <br>
     <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-        <? if(array_key_exists('keywords_phrases', $field_data)) { 
+     <? if(array_key_exists('keywords_phrases', $field_data)) { 
             foreach($field_data['keywords_phrases'] as $keyword_phrase_id) {
                 $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
                 echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
@@ -193,6 +213,31 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         </select></p>
     </td>
 <? } ?>
+</tr>
+</table>
+<br>
+<table width="600" border="0" cellspacing="0" cellpadding="3">
+<tr>
+    <td align="left">
+    <b>Negative Keywords and Phrases</b> [help]<br>
+    <input type="text" name="add_neg_keyword_text" id="add_neg_keyword_text" value="">
+    <label for="neg_exact_phrase"><input name="neg_exact_phrase" id="neg_exact_phrase" type="checkbox" value="1">exact</label>
+    <input type="button" id="add_neg_keyword_btn" name="add_neg_keyword_btn" value="&#043;">
+    <input type="button" id="remove_neg_keyword_btn" name="remove_neg_keyword_btn" value="&#8722;">
+    <br>
+    <select id="negative_keywords" name="negative_keywords[]" multiple="multiple">
+        <? if(array_key_exists('negative_keywords', $field_data)) {
+            foreach($field_data['negative_keywords'] as $negative_keyword) {
+                if($mode == "New") {
+                    echo '<option value="'.$negative_keyword.'">'.$negative_keyword.'</option>';
+                } elseif($mode == "Modify") {
+                    // $negative_keyword is the keyword_id
+                    $quotes = ($field_data['keyword_phrase_data'][$negative_keyword]['exact_phrase']) ? '"' : '';
+                    echo '<option value="'.$negative_keyword.'">'.$quotes.$field_data['keyword_phrase_data'][$negative_keyword]['keyword_phrase'].$quotes.'</option>';
+                }
+            }
+        } ?>
+    </select>
 </tr>
 </table>
 

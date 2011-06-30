@@ -169,7 +169,7 @@ class Model_Params extends Model {
         return $feed_ids;
     }
     
-    public function insert_keywords($project_id, Array $keywords_phrases)
+    public function insert_keywords($project_id, Array $keywords_phrases, $is_negative = 0)
     {
         foreach($keywords_phrases as $keyword_phrase) {
             $keyword_phrase = trim($keyword_phrase);
@@ -180,8 +180,13 @@ class Model_Params extends Model {
             } else {
                 $exact_phrase = 0;
             } 
-            DB::insert('keywords_phrases', array('project_id', 'keyword_phrase', 'exact_phrase',  'date_added'))->values(array($project_id, $keyword_phrase, $exact_phrase, time()))->execute();
+            DB::insert('keywords_phrases', array('project_id', 'keyword_phrase', 'is_negative', 'exact_phrase',  'date_added'))->values(array($project_id, $keyword_phrase, $is_negative, $exact_phrase, time()))->execute();
         }
+    }
+    
+    public function remove_keyword($keyword_id)
+    {
+        DB::delete('keywords_phrases')->where('keyword_id','=',$keyword_id)->execute();
     }
     
     public function update_keywords(Array $keywords_phrases)
@@ -205,11 +210,15 @@ class Model_Params extends Model {
     
     public function get_active_keywords($project_id)
     {
-        return $this->create_keyword_id_array(DB::select('keyword_id')->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array());
+        return $this->create_keyword_id_array(DB::select('keyword_id')->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->where('is_negative','=',0)->execute()->as_array());
     }
     public function get_deactivated_keywords($project_id)
     {
-        return $this->create_keyword_id_array(DB::select('keyword_id')->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',0)->execute()->as_array());
+        return $this->create_keyword_id_array(DB::select('keyword_id')->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',0)->where('is_negative','=',0)->execute()->as_array());
+    }
+    public function get_negative_keywords($project_id)
+    {
+        return $this->create_keyword_id_array(DB::select('keyword_id')->from('keywords_phrases')->where('project_id','=',$project_id)->where('is_negative','=',1)->execute()->as_array());
     }
     private function create_keyword_id_array($keyword_phrase_rows)
     {

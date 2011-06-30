@@ -47,7 +47,11 @@ class Model_Gather extends Model {
     
     public function get_active_keywords($project_id)
     {
-        return DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array();
+        return DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->where('is_negative','=',0)->execute()->as_array();
+    }
+    public function get_negative_keywords($project_id)
+    {
+        return DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->where('is_negative','=',1)->execute()->as_array();
     }
     
     public function insert_url($data)
