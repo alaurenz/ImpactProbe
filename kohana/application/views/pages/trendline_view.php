@@ -32,37 +32,44 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     }
 </script>
 
-<a href="<?= Url::base().'index.php/results/view/'.$project_data['project_id'] ?>">&laquo; Back</a>
+<a href="<?= Url::base(TRUE).'results/view/'.$project_data['project_id'] ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a>
+
 <h3>Trendline - <?= $project_data['project_title'] ?></h3>
+<b>Showing results published</b>: <?= $date_range ?>
 
+<form name="trendline_form" id="trendline_form" method="post" action="">
 
-<p><form name="trendline_form" id="trendline_form" method="post" action="">
-<? if($errors) { 
-    echo '<p class="errors">'; 
-    foreach ($errors as $error_text) { echo $error_text."<br>"; }
-    echo '</p>';
-} ?>
-<b>SHOW</b>
+<? if($errors) { ?>
+<div class="ui-widget">
+    <div class="ui-state-error ui-corner-all" style="padding: 0 .7em;"> 
+    <p><? foreach ($errors as $error_text) { echo '<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>'.$error_text.'<br>'; } ?></p></div>
+</div>
+<? } ?>
+
+<div class="ui-widget">
+<div class="ui-state-default ui-corner-all" style="position:relative; z-index: 2; margin-top: 10px; padding: 0 .7em; padding:3px;"> 
 &nbsp;
-<b>From:</b>
-<input class="date_field" name="datef_m" type="text" id="datef_m" value="<?= $field_data['datef_m'] ?>" maxlength="2">
-/ <input class="date_field" name="datef_d" type="text" id="datef_d" value="<?= $field_data['datef_d'] ?>" maxlength="2">
-/ <input class="date_field" name="datef_y" type="text" id="datef_y" value="<?= $field_data['datef_y'] ?>" maxlength="2">
-&nbsp;
-<b>To:</b>
-<input class="date_field" name="datet_m" type="text" id="datet_m" value="<?= $field_data['datet_m'] ?>" maxlength="2">
-/ <input class="date_field" name="datet_d" type="text" id="datet_d" value="<?= $field_data['datet_d'] ?>" maxlength="2">
-/ <input class="date_field" name="datet_y" type="text" id="datet_y" value="<?= $field_data['datet_y'] ?>" maxlength="2">
-&nbsp;
+Date:
+<input type="text" class="datepicker" id="date_from" name="date_from" size="11" value="<?= $field_data['date_from'] ?>">
+&#045;
+<input type="text" class="datepicker" id="date_to" name="date_to" size="11" value="<?= $field_data['date_to'] ?>">
+&nbsp;&nbsp;
 <select name="display_mode">
   <option value="consensus" <? if($field_data['display_mode'] == "consensus") { echo("selected"); } ?>>consensus</option>
   <option value="by_keyword" <? if($field_data['display_mode'] == "by_keyword") { echo("selected"); } ?>>by keyword</option>
 </select>
 <input type="submit" name="View" value="View">
-<input type="submit" name="Download" value="Download as .csv"><br>
+<input type="reset" name="Reset" value="Reset" onClick="window.location.reload()">
+<input type="submit" name="Download" value="Download as .csv">
+
+</div>
+</div>
+
 <b>NOTE:</b> the &quot;consensus&quot; value represents the total number of entries found which contain any of the search keywords. So when viewing the results broken down by individual keywords the total of those values does not necessarily represent the consensus value (because a single entry may contain multiple keywords).
-</form></p>
+</form>
 
-<p><b>Showing results published</b>: <?= $date_range ?></p>
+<div style="position:relative; z-index: 10;">
+<div id="chart_div" style="position:relative; z-index: 1; <?= $chart_dimensions ?>"></div>
+</div>
 
-<div id="chart_div" style="<?= $chart_dimensions ?>"></div>
+<p><a href="<?= Url::base(TRUE).'results/view/'.$project_data['project_id'] ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a></p>

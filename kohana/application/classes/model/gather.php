@@ -101,12 +101,21 @@ class Model_Gather extends Model {
         }
     }
 
-    public function insert_gather_log($data)
+    public function insert_gather_log($project_id)
     {
-        DB::insert('gather_log', array_keys($data))->values(array_values($data))->execute();
+        list($insert_id, $num_affected_rows) = DB::insert('gather_log', array('project_id', 'date'))->values(array($project_id, time()))->execute();
+        return $insert_id;
+    }
+    public function insert_gather_query($data)
+    {
+        DB::insert('gather_queries', array_keys($data))->values(array_values($data))->execute();
     }
     
-    public function get_gather_log($project_id, $params)
+    public function get_gather_queries($log_id)
+    {
+        return DB::select()->from('gather_queries')->where('log_id','=',$log_id)->execute()->as_array();
+    }
+    public function get_gather_logs($project_id, $params)
     {
         $query = DB::select()->from('gather_log')->where('project_id','=',$project_id);
               
@@ -120,6 +129,17 @@ class Model_Gather extends Model {
         
         $query->order_by('date', strtoupper($params['order']));
         
-        return $query->execute()->as_array();
+        return $query->offset($params['offset'])->execute()->as_array();
+    }
+    public function count_gather_logs($project_id, $params) 
+    {
+        $query = DB::select(DB::expr('COUNT(*) AS mycount'))->from('gather_log')->where('project_id','=',$project_id);
+        
+        if($params['date_from'] > 0) 
+            $query->where('date','>=',$params['date_from']);
+        if($params['date_to'] > 0) 
+            $query->where('date','<=',$params['date_to']);
+        
+        return $query->execute()->get('mycount');
     }
 }

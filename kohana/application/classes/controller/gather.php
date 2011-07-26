@@ -47,6 +47,7 @@ class Controller_Gather extends Controller {
                     print "Project with this ID does not exist\n";
                 } else {
                     $api_sources = $this->model_params->get_active_api_sources($gather_from);
+                    $this->gather_log_id = $this->model_gather->insert_gather_log($gather_from);
                     foreach($api_sources as $api_source) {
                         eval('$this->'.$api_source['gather_method_name'].'('.$gather_from.');');
                     }
@@ -57,6 +58,7 @@ class Controller_Gather extends Controller {
                 if(count($active_projects) > 0) {
                     foreach($active_projects as $project) {
                         $this->get_project_data($project['project_id']);
+                        $this->gather_log_id = $this->model_gather->insert_gather_log($project['project_id']);
                         $api_sources = $this->model_params->get_active_api_sources($project['project_id']);
                         foreach($api_sources as $api_source) {
                             eval('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');');
@@ -110,12 +112,11 @@ class Controller_Gather extends Controller {
         }
         
         // Search Twitter API for each keyword/phrase (1 query per keyword/phrase)
-        $num_keywords = count($this->keywords_phrases);
         $i = 0;
         foreach($this->keywords_phrases as $keyword_phrase) {
-        	$i++;
-        	$keyword_str = "";
-        	$total_results_gathered = 0;
+            $i++;
+            $keyword_str = "";
+            $total_results_gathered = 0;
             $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
             if(count($word_split) > 1) { // Is phrase (more than 1 word)
                 // Check if searching "exact phrase" -> if so add quotes
@@ -129,73 +130,72 @@ class Controller_Gather extends Controller {
             }
             
             $this->api_connect_error = 0;
-	        $cur_page = 1;
-	        while(TRUE) {
-	            // Compile request URL
-	            $request_url = $api_url.'?q='.$keyword_str.$neg_keywords_str.$lang.$results_per_page.'&page='.$cur_page;
-	            print "Query: $request_url\n";
-	            
-	            $response = $this->api_connect($request_url, 'get');
-	            // Stop trying to gather if there was a connection failure
-	            if($this->api_connect_error) { break; }
-	            
-	            // Loop through each tweet (if there are results on this page)
-	            $json = json_decode($response, true);
-	            $num_results = count($json['results']);
-	            if($num_results > 0) {
-	                
-	                foreach($json['results'] as $tweet_data) {
-	                    
-	                    if(array_key_exists('from_user', $tweet_data) AND array_key_exists('id', $tweet_data)) {
-	                        $username = $tweet_data['from_user'];
-	                        $tweet_id = $tweet_data['id'];
-	                        $tweet_url = "http://twitter.com/$username/status/$tweet_id";
-	                    } else { 
-	                        print "ERROR: No tweet ID and/or user ID found. Cannot use.\n";
-	                        continue; 
-	                    }
-	                    if(array_key_exists('created_at', $tweet_data)) {
-	                        $date_published = $tweet_data['created_at'];
-	                        $date_published_timestamp = strtotime($date_published); // $this->date_to_timestamp($date_published);
-	                    } else { $date_published_timestamp = 0; }
-	                    $tweet_text = (array_key_exists('text', $tweet_data)) ? $tweet_data['text'] : '';
-	                    $tweet_lang = (array_key_exists('iso_language_code', $tweet_data)) ? $tweet_data['iso_language_code'] : '';
-	                    // Geolocation info
-	                    $place = "";
-	                    if(array_key_exists('place', $tweet_data)) {
-	                        foreach($tweet_data['place'] as $place_data) {
-	                            $place .= "$place_data ";
-	                        }
-	                    }
-	                    
-	                    $require_keywords = 0;
-	                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, $require_keywords, array(
-	                        'project_id' => $this->project_id,
-	                        'api_id' => $api_id,
-	                        'date_published' => $date_published_timestamp,
-	                        'date_retrieved' => time(),
-	                        'lang' => $tweet_lang,
-	                        'geolocation' => $place
-	                    ));
-	                    
-	                }
-	                $cur_page++;
-	                
-	            } else {
-	                // No results on this page so we are DONE!
-	                break;
-	            }
-	        }
-	        
-	        // Add entry to gather log (as long as no errors occurred)
-	        if(!$this->api_connect_error) {
-	            $this->model_gather->insert_gather_log(array(
-	                'project_id' => $this->project_id,
-	                'search_query' => $request_url,
-	                'date' => time(),
-	                'results_gathered' => $total_results_gathered
-	            ));
-	        }
+            $cur_page = 1;
+            while(TRUE) {
+                // Compile request URL
+                $request_url = $api_url.'?q='.$keyword_str.$neg_keywords_str.$lang.$results_per_page.'&page='.$cur_page;
+                print "Query: $request_url\n";
+                
+                $response = $this->api_connect($request_url, 'get');
+                // Stop trying to gather if there was a connection failure
+                if($this->api_connect_error) { break; }
+                
+                // Loop through each tweet (if there are results on this page)
+                $json = json_decode($response, true);
+                $num_results = count($json['results']);
+                if($num_results > 0) {
+                    
+                    foreach($json['results'] as $tweet_data) {
+                        
+                        if(array_key_exists('from_user', $tweet_data) AND array_key_exists('id', $tweet_data)) {
+                            $username = $tweet_data['from_user'];
+                            $tweet_id = $tweet_data['id'];
+                            $tweet_url = "http://twitter.com/$username/status/$tweet_id";
+                        } else { 
+                            print "ERROR: No tweet ID and/or user ID found. Cannot use.\n";
+                            continue; 
+                        }
+                        if(array_key_exists('created_at', $tweet_data)) {
+                            $date_published = $tweet_data['created_at'];
+                            $date_published_timestamp = strtotime($date_published); // $this->date_to_timestamp($date_published);
+                        } else { $date_published_timestamp = 0; }
+                        $tweet_text = (array_key_exists('text', $tweet_data)) ? $tweet_data['text'] : '';
+                        $tweet_lang = (array_key_exists('iso_language_code', $tweet_data)) ? $tweet_data['iso_language_code'] : '';
+                        // Geolocation info
+                        $place = "";
+                        if(array_key_exists('place', $tweet_data)) {
+                            foreach($tweet_data['place'] as $place_data) {
+                                $place .= "$place_data ";
+                            }
+                        }
+                        
+                        $require_keywords = 0;
+                        $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, $require_keywords, array(
+                            'project_id' => $this->project_id,
+                            'api_id' => $api_id,
+                            'date_published' => $date_published_timestamp,
+                            'date_retrieved' => time(),
+                            'lang' => $tweet_lang,
+                            'geolocation' => $place
+                        ));
+                        
+                    }
+                    $cur_page++;
+                    
+                } else {
+                    // No results on this page so we are DONE!
+                    break;
+                }
+            }
+            
+            // Add entry to gather log (as long as no errors occurred)
+            if(!$this->api_connect_error) {
+                $this->model_gather->insert_gather_query(array(
+                    'log_id' => $this->gather_log_id,
+                    'search_query' => $request_url,
+                    'results_gathered' => $total_results_gathered
+                ));
+            }
         }
     }
     
@@ -207,16 +207,54 @@ class Controller_Gather extends Controller {
         // Perform gathering for each active RSS feed URL for given project_id
         $rss_feeds = $this->model_gather->get_active_rss_feeds($this->project_id);
         
+        // If can be used -> add single or exact phrase negative keywords to query string
+        // (because mutiple non-exact negative keywords are assumed to not be supported)
+        $neg_keywords_str = "";
         foreach($rss_feeds as $rss_feed) {
-            $total_results_gathered = 0;
-            
-            // If RSS feed was set searchable generate search query GET string
-            $keyword_str = "";
             if($rss_feed['searchable']) {
-                $num_keywords = count($this->keywords_phrases);
-                $i = 0;
-                foreach($this->keywords_phrases as $keyword_phrase) {
-                    $i++;
+                foreach($this->negative_keywords as $negative_keyword) {
+                    $word_split = explode(" ", $negative_keyword['keyword_phrase']);
+                    if(count($word_split) > 1) { // Is phrase (more than 1 word)
+                        // Check if searching "exact phrase" -> if so add quotes
+                        if($negative_keyword['exact_phrase'])
+                            $neg_keywords_str .= '+-"'.urlencode($negative_keyword['keyword_phrase']).'"';
+                    }
+                    else { // Is single keyword
+                        $neg_keywords_str .= '+-'.urlencode($negative_keyword['keyword_phrase']);
+                    }
+                }
+                break;
+            }
+        }
+        
+        /* OLD:
+        foreach($this->keywords_phrases as $keyword_phrase) {
+            $i++;
+            $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
+            if(count($word_split) > 1) { // Is phrase (more than 1 word)
+                // Check if searching "exact phrase" -> if so add quotes
+                if($keyword_phrase['exact_phrase'])
+                    $keyword_str .= '"'.urlencode($keyword_phrase['keyword_phrase']).'"';
+                else
+                    $keyword_str .= '('.urlencode($keyword_phrase['keyword_phrase']).')';
+            } 
+            else { // Is single keyword
+                $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
+            }
+            if($i < $num_keywords) {
+                $keyword_str .= '+OR+';
+            }
+        } */
+        
+        foreach($rss_feeds as $rss_feed) {
+            $i = 0;
+            foreach($this->keywords_phrases as $keyword_phrase) {
+                $i++;
+                $total_results_gathered = 0;
+                
+                $keyword_str = "";
+                // If RSS feed was set searchable generate search query GET string
+                if($rss_feed['searchable']) {
                     $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
                     if(count($word_split) > 1) { // Is phrase (more than 1 word)
                         // Check if searching "exact phrase" -> if so add quotes
@@ -228,96 +266,102 @@ class Controller_Gather extends Controller {
                     else { // Is single keyword
                         $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
                     }
-                    if($i < $num_keywords) {
-                        $keyword_str .= '+OR+';
+                }
+                
+                $connection_retries = 0;
+                $this->api_connect_error = 0;
+                while(TRUE) {
+                    // Compile request URL
+                    $request_url = $rss_feed['url'].$keyword_str.$neg_keywords_str;
+                    print "Query: $request_url\n";
+                    
+                    // Check for connection errors
+                    try {
+                        $status_code = Remote::status($request_url);
+                    } catch (Exception $e) {
+                        $this->api_connect_error = "Error connecting to $request_url. Cannot locate host.";
+                    } 
+                    if(!$this->api_connect_error AND ($status_code < 200 OR $status_code > 299)) {
+                        $this->api_connect_error = "Error connecting to $request_url. Status code: $status_code";
                     }
-                }
-            }
-            
-            $connection_retries = 0;
-            $this->api_connect_error = 0;
-            while(TRUE) {
-                // Compile request URL
-                $request_url = $rss_feed['url'].$keyword_str;
-                print "Query: $request_url\n";
-                
-                // Check for connection errors
-                try {
-                    $status_code = Remote::status($request_url);
-                } catch (Exception $e) {
-                    $this->api_connect_error = "Error connecting to $request_url. Cannot locate host.";
-                } 
-                if(!$this->api_connect_error AND ($status_code < 200 OR $status_code > 299)) {
-                    $this->api_connect_error = "Error connecting to $request_url. Status code: $status_code";
-                }
-                
-                if(!$this->api_connect_error) {
-                    $rss_output = Feed::parse($request_url);
-                    $num_results = count($rss_output);
-                    if($num_results > 0) {
-                        // Loop through each result, parse, and store data
-                        foreach($rss_output as $item) {
-                            $title = (array_key_exists('title', $item)) ? $item['title'] : '';
-                            $text = (array_key_exists('description', $item)) ? $item['description'] : '';
-                            $date_published_timestamp = (array_key_exists('pubDate', $item)) ? strtotime($item['pubDate']) : 0;
-                            
-                            // Append title to text & strip all HTML tags except <br>'s
-                            $text = "Title: $title<br>$text";
-                            $text = strip_tags($text, "<br>");
-                            
-                            // Determine unique identifier, if no URL -> use guid -> if no GUID give error
-                            if(array_key_exists('link', $item) AND $item['link'] != "") {
-                                $url = $item['link'];
-                            } else if(array_key_exists('guid', $item)) {
-                                $url = $item['guid'];
-                            } else { 
-                                print "Error: item has no URL or GUID. Cannot use.\n";
-                                continue;
+                    
+                    if(!$this->api_connect_error) {
+                        $rss_output = Feed::parse($request_url);
+                        $num_results = count($rss_output);
+                        if($num_results > 0) {
+                            // Loop through each result, parse, and store data
+                            foreach($rss_output as $item) {
+                                $title = (array_key_exists('title', $item)) ? $item['title'] : '';
+                                $text = (array_key_exists('description', $item)) ? $item['description'] : '';
+                                $date_published_timestamp = (array_key_exists('pubDate', $item)) ? strtotime($item['pubDate']) : 0;
+                                
+                                // Append title to text & strip all HTML tags except <br>'s
+                                $text = "Title: $title<br>$text";
+                                $text = strip_tags($text, "<br>");
+                                
+                                // Determine unique identifier, if no URL -> use guid -> if no GUID give error
+                                if(array_key_exists('link', $item) AND $item['link'] != "") {
+                                    $url = $item['link'];
+                                } else if(array_key_exists('guid', $item)) {
+                                    $url = $item['guid'];
+                                } else { 
+                                    print "Error: item has no URL or GUID. Cannot use.\n";
+                                    continue;
+                                }
+                                
+                                // Add each result to database
+                                $require_keywords = ($rss_feed['searchable']) ? 0 : 1; // Only require keywords if RSS feed is NOT searchable
+                                $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
+                                    'project_id' => $this->project_id,
+                                    'api_id' => $api_id,
+                                    'date_published' => $date_published_timestamp,
+                                    'date_retrieved' => time()
+                                ));
                             }
-                            
-                            // Add each result to database
-                            $require_keywords = ($rss_feed['searchable']) ? 0 : 1; // Only require keywords if RSS feed is NOT searchable
-                            $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
-                                'project_id' => $this->project_id,
-                                'api_id' => $api_id,
-                                'date_published' => $date_published_timestamp,
-                                'date_retrieved' => time()
-                            ));
                         }
-                    }
-                    break; 
-                    
-                } else {
-                    // Retry connecting to API
-                    $connection_retries++;
-                    
-                    // Connection error (only for non-searchable RSS feeds, it is assumed an error has occured if no item comes through the feed after multiple connection attempts)
-                    if($connection_retries > $this->connection_retries) {
-                        if(!$rss_feed['searchable']) {
-                            $this->model_gather->insert_gather_log(array(
-                                'project_id' => $this->project_id,
-                                'search_query' => $this->api_connect_error,
-                                'date' => time(),
-                                'results_gathered' => 0,
-                                'error' => 1
-                            ));
-                            $this->api_connect_error = 1;
+                        break; 
+                        
+                    } else {
+                        // Retry connecting to API
+                        $connection_retries++;
+                        
+                        // Connection error (for non-searchable RSS feeds it is assumed an error has occured if no item comes through the feed after multiple connection attempts)
+                        if($connection_retries > $this->connection_retries) {
+                            if($rss_feed['searchable']) {
+                                $this->model_gather->insert_gather_query(array(
+                                    'log_id' => $this->gather_log_id,
+                                    'search_query' => "[possible error] $request_url",
+                                    'results_gathered' => $total_results_gathered
+                                ));
+                            } else {
+                                $this->model_gather->insert_gather_query(array(
+                                    'log_id' => $this->gather_log_id,
+                                    'search_query' => $this->api_connect_error,
+                                    'results_gathered' => 0,
+                                    'error' => 1
+                                ));
+                                $this->api_connect_error = 1;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-            
-            // Add entry to gather log (as long as no errors occurred)
-            if(!$this->api_connect_error) {
-                $this->model_gather->insert_gather_log(array(
-                    'project_id' => $this->project_id,
-                    'search_query' => $request_url,
-                    'date' => time(),
-                    'results_gathered' => $total_results_gathered
-                ));
+                
+                // Add entry to gather log (as long as no errors occurred)
+                if(!$this->api_connect_error) {
+                    $this->model_gather->insert_gather_query(array(
+                        'log_id' => $this->gather_log_id,
+                        'search_query' => $request_url,
+                        'results_gathered' => $total_results_gathered
+                    ));
+                }
+                
+                // Don't re-search RSS feed for each keyword unless it is a searchable feed
+                if(!$rss_feed['searchable'])
+                    break;
             }
         }
+
     }
     
    /***********************************
@@ -337,12 +381,11 @@ class Controller_Gather extends Controller {
         // If your API takes a POST query you will have to send your keyword data as an array 
         // of key/value pairs and pass it to the api_connect() method below. You will like 
         // have to modify this section significantly according to the syntax of the API
-        $total_results_gathered = 0;
-        $keyword_str = "";
-        $num_keywords = count($this->keywords_phrases);
         $i = 0;
         foreach($this->keywords_phrases as $keyword_phrase) {
             $i++;
+            $total_results_gathered = 0;
+            $keyword_str = "";
             $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
             if(count($word_split) > 1) { // Is phrase (more than 1 word)
                 // Check if searching "exact phrase" -> if so add quotes
@@ -355,68 +398,58 @@ class Controller_Gather extends Controller {
                 $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
             }
             
-            // If the API does not support "OR" you can issue separate queries for
-            // each keyword. To do this replace the if statement below with the 
-            // "Connect to API & gather data" code below. You must also move the 
-            // following lines inside the "keywords_phrases" for loop:
-            // 	  $keyword_str = "";
-        	// 	  $total_results_gathered = 0;
-            if($i < $num_keywords) {
-                $keyword_str .= '+OR+';
+            // START Connect to API & gather data
+            $this->api_connect_error = 0;
+            while(TRUE) {
+                // Compile request URL
+                $request_url = "$api_url?q=$keyword_str"; // Example of GET query string (you will almost certainly have to modify the syntax for your API 
+                print "Query: $request_url\n";
+                
+                // Use the api_connect() method in one of two ways: if your API takes a GET request pass the URL as the first parameter and 'get' as the second; if your API takes a POST request pass the URL as the first parameter, 'post' as the second, and the key/value array of POST data as the third
+                $response = $this->api_connect($request_url, 'get');
+                $response = $this->api_connect($request_url, 'post', $post_data);
+                
+                // Stop trying to gather if there was a connection failure
+                if($this->api_connect_error) { break; }
+                
+                // Determine number of results or somehow detect when there are no more results to gather
+                // ***NOTICE: It is very important that break the `while(TRUE)` loop after determining there are no more results to gather or else the script will go into an infinite loop
+                if($num_results > 0) {
+                    
+                    // Loop through each result, parse, and store data
+                    // BEGIN LOOP
+                    
+                        // Add each result to database
+                        $require_keywords = ; // Set this to 1 to make it so metadata is not added to the database unless at least 1 active keyword is found in the given text (set it to 0 to add given metadata to database regardless)
+                        $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
+                            'project_id' => $this->project_id,
+                            'api_id' => $api_id,
+                            'date_published' => $date_published_timestamp,
+                            'date_retrieved' => time(),
+                            'lang' => $lang,
+                            'geolocation' => $geolocation
+                        ));
+                    
+                    // END LOOP
+                    
+                } else {
+                    // No results on this page so we are DONE!
+                    break;
+                }
             }
+            
+            // Add entry to gather log (as long as no errors occurred)
+            if(!$this->api_connect_error) {
+                $this->model_gather->insert_gather_query(array(
+                    'log_id' => $this->gather_log_id,
+                    'search_query' => $request_url,
+                    'results_gathered' => $total_results_gathered
+                ));
+            }
+            // END Connect to API
+            
         }
         
-        // START Connect to API & gather data
-        $this->api_connect_error = 0;
-        $cur_page = 1;
-        while(TRUE) {
-            // Compile request URL
-            $request_url = "$api_url?q=$keyword_str"; // Example of GET query string (you will almost certainly have to modify the syntax for your API 
-            print "Query: $request_url\n";
-            
-            // Use the api_connect() method in one of two ways: if your API takes a GET request pass the URL as the first parameter and 'get' as the second; if your API takes a POST request pass the URL as the first parameter, 'post' as the second, and the key/value array of POST data as the third
-            $response = $this->api_connect($request_url, 'get');
-            $response = $this->api_connect($request_url, 'post', $post_data);
-            
-            // Stop trying to gather if there was a connection failure
-            if($this->api_connect_error) { break; }
-            
-            // Determine number of results or somehow detect when there are no more results to gather
-            // ***NOTICE: It is very important that break the `while(TRUE)` loop after determining there are no more results to gather or else the script will go into an infinite loop
-            if($num_results > 0) {
-                
-                // Loop through each result, parse, and store data
-                // BEGIN LOOP
-                
-                    // Add each result to database
-                    $require_keywords = ; // Set this to 1 to make it so metadata is not added to the database unless at least 1 active keyword is found in the given text (set it to 0 to add given metadata to database regardless)
-                    $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
-                        'project_id' => $this->project_id,
-                        'api_id' => $api_id,
-                        'date_published' => $date_published_timestamp,
-                        'date_retrieved' => time(),
-                        'lang' => $lang,
-                        'geolocation' => $geolocation
-                    ));
-                
-                // END LOOP
-                
-            } else {
-                // No results on this page so we are DONE!
-                break;
-            }
-        }
-        
-        // Add entry to gather log (as long as no errors occurred)
-        if(!$this->api_connect_error) {
-            $this->model_gather->insert_gather_log(array(
-                'project_id' => $this->project_id,
-                'search_query' => $request_url,
-                'date' => time(),
-                'results_gathered' => $total_results_gathered
-            ));
-        }
-        // END Connect to API
     }
     ***************************************
     ** END NEW GATHERING METHOD TEMPLATE **
@@ -441,10 +474,9 @@ class Controller_Gather extends Controller {
                 print "Could not connect to API with request: $request_url\n";
                 
                 // Add ERROR entry to gather log
-                $this->model_gather->insert_gather_log(array(
-                    'project_id' => $this->project_id,
+                $this->model_gather->insert_gather_query(array(
+                    'log_id' => $this->gather_log_id,
                     'search_query' => $error, // Pass last error message instead of query URL
-                    'date' => time(),
                     'results_gathered' => 0,
                     'error' => 1
                 ));
@@ -502,36 +534,36 @@ class Controller_Gather extends Controller {
             } else {
                 // Check for presence of negative keywords
                 if($this->negative_keyword_exists($cache_text)) {
-                	print "neg keyword found: $url\n";
+                    print "neg keyword found: $url\n";
                 } else {
-	                print "added: $url\n";
-	                $new_entry_added = 1;
-	                
-	                // Add new URL & metadata entry 
-	                $url_id = $this->model_gather->insert_url(array(
-	                    'project_id' => $this->project_id, 
-	                    'url' => $url
-	                ));
-	                $metadata['url_id'] = $url_id;
-	                $meta_id = $this->model_gather->insert_metadata($metadata);
-	                
-	                // Add metadata for each keyword found in $cache_text
-	                if(count($keyword_metadata_entries) > 0) {
-	                    foreach($keyword_metadata_entries as $keyword_metadata_entry) {
-	                        $keyword_metadata_entry['meta_id'] = $meta_id;
-	                        $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
-	                    }
-	                }
-	                
-	                $this->model_gather->insert_cached_text(array(
-	                    'meta_id' => $meta_id,
-	                    'text' => $cache_text
-	                ));
-	                $this->model_gather->save_cached_text(array(
-	                    'project_id' => $this->project_id,
-	                    'meta_id' => $meta_id,
-	                    'text' => $cache_text
-	                ));
+                    print "added: $url\n";
+                    $new_entry_added = 1;
+                    
+                    // Add new URL & metadata entry 
+                    $url_id = $this->model_gather->insert_url(array(
+                        'project_id' => $this->project_id, 
+                        'url' => $url
+                    ));
+                    $metadata['url_id'] = $url_id;
+                    $meta_id = $this->model_gather->insert_metadata($metadata);
+                    
+                    // Add metadata for each keyword found in $cache_text
+                    if(count($keyword_metadata_entries) > 0) {
+                        foreach($keyword_metadata_entries as $keyword_metadata_entry) {
+                            $keyword_metadata_entry['meta_id'] = $meta_id;
+                            $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
+                        }
+                    }
+                    
+                    $this->model_gather->insert_cached_text(array(
+                        'meta_id' => $meta_id,
+                        'text' => $cache_text
+                    ));
+                    $this->model_gather->save_cached_text(array(
+                        'project_id' => $this->project_id,
+                        'meta_id' => $meta_id,
+                        'text' => $cache_text
+                    ));
             	}
             }
         }
@@ -621,27 +653,27 @@ class Controller_Gather extends Controller {
             // Default results display
             $result_params = array(
                 'date_from' => 0, 'date_to' => 0,
-                'num_results' => 100,
+                'num_results' => 10,
                 'order' => 'desc'
             );
             
             $form_errors = "";
             if($_POST) {
                 // Form validation
-                $post = new Validate($_POST);
-                $post->rule('datef_m', 'digit')->rule('datef_d', 'digit')->rule('datef_y', 'digit')
-                     ->rule('datet_m', 'digit')->rule('datet_d', 'digit')->rule('datet_y', 'digit');
+                $post = Validate::factory($_POST);
+                $post->rule('date_from', 'max_length', array(10))
+                     ->rule('date_to', 'max_length', array(10));
                 
                 $field_data = $post->as_array(); // For form re-population
                 
                 if ($post->check()) {
-                    
                     // Process results display parameters
-                    if($field_data['datef_m'] > 0 AND $field_data['datef_y'] > 0 AND $field_data['datef_y'] > 0)
-                        $result_params['date_from'] = mktime(0, 0, 0, $field_data['datef_m'], $field_data['datef_d'], $field_data['datef_y']);
-                    
-                    if($field_data['datet_m'] > 0 AND $field_data['datet_y'] > 0 AND $field_data['datet_y'] > 0)
-                        $result_params['date_to'] = mktime(0, 0, 0, $field_data['datet_m'], $field_data['datet_d'], $field_data['datet_y']);
+                    $date_from_ex = explode("/", $field_data['date_from']);
+                    $date_to_ex = explode("/", $field_data['date_to']);
+                    if(count($date_from_ex) == 3 AND $date_from_ex[0] > 0 AND $date_from_ex[1] > 0 AND $date_from_ex[2] > 0)
+                        $result_params['date_from'] = mktime(0, 0, 0, $date_from_ex[0], $date_from_ex[1], $date_from_ex[2]);
+                    if(count($date_to_ex) == 3 AND $date_to_ex[0] > 0 AND $date_to_ex[1] > 0 AND $date_to_ex[2] > 0)
+                        $result_params['date_to'] = mktime(0, 0, 0, $date_to_ex[0], $date_to_ex[1]+1, $date_to_ex[2]); // Add +1 to ay so it searches THROUGH given "To" date
                     
                     $result_params['num_results'] = $field_data['num_results'];
                     $result_params['order'] = strtoupper($field_data['order']);
@@ -652,17 +684,31 @@ class Controller_Gather extends Controller {
             } else {
                 // Populate form w/ empty values
                 $field_data = array(
-                    'datef_m' => '', 'datef_d' => '', 'datef_y' => '', 
-                    'datet_m' => '', 'datet_d' => '', 'datet_y' => '',
+                    'date_from' => '', 'date_to' => '',
                     'num_results' => $result_params['num_results'],
                     'order' => $result_params['order']
                 );
             } 
-            $results = $this->model_gather->get_gather_log($project_id, $result_params);
             
-            $view->page_content->field_data                = $field_data;
-            $view->page_content->results                   = $results;
-            $view->page_content->errors                    = $form_errors;
+            // Pagination
+  	    $count = $this->model_gather->count_gather_logs($project_id, $result_params);
+  	    $pagination = Pagination::factory(array(
+                    'total_items'    => $count,
+                    'items_per_page' => $result_params['num_results'],
+                    'view'           => 'pagination/post_mod',
+            ));
+            $result_params['offset'] = $pagination->offset;
+            $results = $this->model_gather->get_gather_logs($project_id, $result_params);
+            // Attach query log info
+            for($i = 0; $i < count($results); $i++) {
+                $results[$i]['queries'] = $this->model_gather->get_gather_queries($results[$i]['log_id']);
+            }
+            
+            $view->page_content->project_data = $project_data;
+            $view->page_content->field_data = $field_data;
+            $view->page_content->results = $results;
+            $view->page_content->page_links = $pagination->render();
+            $view->page_content->errors = $form_errors;
             $this->request->response = $view;
         }
         

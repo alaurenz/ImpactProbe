@@ -28,8 +28,8 @@ class Controller_Results extends Controller {
         $this->model_results = new Model_Results;
         
         $this->chart_api_url = "http://chart.apis.google.com/chart";
-        $this->date_format = "M-d-Y";
         $this->date_format_chart = 'MMM-dd-yyyy';
+        $this->clusters_threshold_exact = 0.7; // Threshold used to cluster docs containing the exact or nearly exact text (for collapsing)
         $this->chart_w = 800; // (in px) > 800px may cause problems 
         $this->chart_h = 370; // (in px) > 370px may cause problems
     }
@@ -66,22 +66,22 @@ class Controller_Results extends Controller {
             $download_results = 0;
             if($_POST) {
                 // Form validation
-                $post = Validate::factory($_POST)
-                      ->rule('datef_m', 'digit')->rule('datef_d', 'digit')->rule('datef_y', 'digit')
-                      ->rule('datet_m', 'digit')->rule('datet_d', 'digit')->rule('datet_y', 'digit');
+                $post = Validate::factory($_POST);
+                $post->rule('date_from', 'max_length', array(10))
+                     ->rule('date_to', 'max_length', array(10));
                  
                 $field_data = $post->as_array(); // For form re-population
                 
                 if ($post->check()) {
-                    
                     // Process results display parameters
-                    if($field_data['datef_m'] > 0 AND $field_data['datef_y'] > 0 AND $field_data['datef_y'] > 0)
-                        $result_params['date_from'] = mktime(0, 0, 0, $field_data['datef_m'], $field_data['datef_d'], $field_data['datef_y']);
+                    $date_from_ex = explode("/", $field_data['date_from']);
+                    $date_to_ex = explode("/", $field_data['date_to']);
+                    if(count($date_from_ex) == 3 AND $date_from_ex[0] > 0 AND $date_from_ex[1] > 0 AND $date_from_ex[2] > 0)
+                        $result_params['date_from'] = mktime(0, 0, 0, $date_from_ex[0], $date_from_ex[1], $date_from_ex[2]);
+                    if(count($date_to_ex) == 3 AND $date_to_ex[0] > 0 AND $date_to_ex[1] > 0 AND $date_to_ex[2] > 0)
+                        $result_params['date_to'] = mktime(0, 0, 0, $date_to_ex[0], $date_to_ex[1]+1, $date_to_ex[2]); // Add +1 to ay so it searches THROUGH given "To" date
                     
-                    if($field_data['datet_m'] > 0 AND $field_data['datet_y'] > 0 AND $field_data['datet_y'] > 0)
-                        $result_params['date_to'] = mktime(0, 0, 0, $field_data['datet_m'], $field_data['datet_d'], $field_data['datet_y']);
-                    
-                    if(array_key_exists('Download', $field_data)) // Download button was clicked
+                    if($field_data['download'] == 'download') // Download button was clicked
                         $download_results = 1;
                     
                     $result_params['num_results'] = $field_data['num_results'];
@@ -93,8 +93,7 @@ class Controller_Results extends Controller {
             } else {
                 // Populate form w/ empty values
                 $field_data = array(
-                    'datef_m' => '', 'datef_d' => '', 'datef_y' => '', 
-                    'datet_m' => '', 'datet_d' => '', 'datet_y' => '',
+                    'date_from' => '', 'date_to' => '',
                     'num_results' => $result_params['num_results'],
                     'order' => $result_params['order'],
                     'download_mode' => $result_params['download_mode']
@@ -114,7 +113,7 @@ class Controller_Results extends Controller {
                     $edge_date_from = $result_params['date_from'];
                 if($result_params['date_to'] > 0 AND $result_params['date_to'] < $edge_date_to)
                     $edge_date_to = $result_params['date_to'];
-                $date_published_range = date($this->date_format, $edge_date_from)." - ".date($this->date_format, $edge_date_to);
+                $date_published_range = date(Kohana::config('myconf.date_format'), $edge_date_from)." - ".date(Kohana::config('myconf.date_format'), $edge_date_to);
             } else {
                 $date_published_range = "";
             }
@@ -138,7 +137,7 @@ class Controller_Results extends Controller {
                 }
                 
                 // Begin download
-                $download_filename = $field_data['download_mode']."_".date($this->date_format, $edge_date_from)."_".date($this->date_format, $edge_date_to);
+                $download_filename = $field_data['download_mode']."_".date(Kohana::config('myconf.date_format'), $edge_date_from)."_".date(Kohana::config('myconf.date_format'), $edge_date_to);
                 $this->request->redirect(Kohana::config('myconf.url.download')."?file=$download_file&type=$download_type&name=$download_filename.$download_ext&delete_file=1");
             } else {
                 // Get array of results to display
@@ -147,7 +146,7 @@ class Controller_Results extends Controller {
             
             $view->page_content->project_data              = $project_data;
             $view->page_content->field_data                = $field_data;
-            $view->page_content->date_format               = $this->date_format;
+            $view->page_content->date_format               = Kohana::config('myconf.date_format');
             $view->page_content->results                   = $results;
             $view->page_content->total_results             = $total_results;
             $view->page_content->date_published_range      = $date_published_range;
@@ -225,8 +224,8 @@ class Controller_Results extends Controller {
         }
         fwrite($fh_download_file, "\n");
         foreach($results as $result) {
-            $date_published = ($result['date_published'] > 0) ? date($this->date_format, $result['date_published']) : 'N/A';
-            $date_retrieved = date($this->date_format, $result['date_retrieved']);
+            $date_published = ($result['date_published'] > 0) ? date(Kohana::config('myconf.date_format'), $result['date_published']) : 'N/A';
+            $date_retrieved = date(Kohana::config('myconf.date_format'), $result['date_retrieved']);
             fwrite($fh_download_file, "$date_published,$date_retrieved,".$result['url']);
             // Put occurrances of each keyword/phrase in its own column
             foreach(array_keys($keywords_phrases) as $keyword_id) {
@@ -248,8 +247,8 @@ class Controller_Results extends Controller {
         $fh_download_file = fopen($download_file, 'w') or die("$download_file: cannot open file for writing");
         foreach($results as $result) {
             //print_r($result);
-            $date_published = ($result['date_published'] > 0) ? date($this->date_format, $result['date_published']) : 'N/A';
-            $date_retrieved = date($this->date_format, $result['date_retrieved']);
+            $date_published = ($result['date_published'] > 0) ? date(Kohana::config('myconf.date_format'), $result['date_published']) : 'N/A';
+            $date_retrieved = date(Kohana::config('myconf.date_format'), $result['date_retrieved']);
             fwrite($fh_download_file, "Date published: $date_published\nDate retrieved: $date_retrieved\nURL: ".$result['url']."\n".$result['text']."\n\n");
         } 
         fclose($fh_download_file);
@@ -269,7 +268,7 @@ class Controller_Results extends Controller {
             $text = preg_replace("/\b($keyword_phrase)\b/ie", "<b>$keyword_phrase</b>", $text); // Doesn't work!
         }
         */
-        $text = $this->make_urls_clickable($text);
+        $text = $this->parse_urls($text);
         $view->text = $text;
         $this->request->response = $view;
     } 
@@ -298,19 +297,20 @@ class Controller_Results extends Controller {
             $download_results = 0;
             if($_POST) {
                 // Form validation
-                $post = Validate::factory($_POST)
-                      ->rule('datef_m', 'digit')->rule('datef_d', 'digit')->rule('datef_y', 'digit')
-                      ->rule('datet_m', 'digit')->rule('datet_d', 'digit')->rule('datet_y', 'digit');
+                $post = Validate::factory($_POST);
+                $post->rule('date_from', 'max_length', array(10))
+                     ->rule('date_to', 'max_length', array(10));
                  
                 $field_data = $post->as_array(); // For form re-population
                 
                 if ($post->check()) {
                     // Process results display parameters
-                    if($field_data['datef_m'] > 0 AND $field_data['datef_y'] > 0 AND $field_data['datef_y'] > 0)
-                        $result_params['date_from'] = mktime(0, 0, 0, $field_data['datef_m'], $field_data['datef_d'], $field_data['datef_y']);
-                    
-                    if($field_data['datet_m'] > 0 AND $field_data['datet_y'] > 0 AND $field_data['datet_y'] > 0)
-                        $result_params['date_to'] = mktime(0, 0, 0, $field_data['datet_m'], $field_data['datet_d'], $field_data['datet_y']);
+                    $date_from_ex = explode("/", $field_data['date_from']);
+                    $date_to_ex = explode("/", $field_data['date_to']);
+                    if(count($date_from_ex) == 3 AND $date_from_ex[0] > 0 AND $date_from_ex[1] > 0 AND $date_from_ex[2] > 0)
+                        $result_params['date_from'] = mktime(0, 0, 0, $date_from_ex[0], $date_from_ex[1], $date_from_ex[2]);
+                    if(count($date_to_ex) == 3 AND $date_to_ex[0] > 0 AND $date_to_ex[1] > 0 AND $date_to_ex[2] > 0)
+                        $result_params['date_to'] = mktime(0, 0, 0, $date_to_ex[0], $date_to_ex[1], $date_to_ex[2]); // Add +1 to ay so it searches THROUGH given "To" date
                     
                     $result_params['display_mode'] = $field_data['display_mode'];
                     
@@ -323,8 +323,7 @@ class Controller_Results extends Controller {
             } else {
                 // Populate form w/ empty values
                 $field_data = array(
-                    'datef_m' => '', 'datef_d' => '', 'datef_y' => '', 
-                    'datet_m' => '', 'datet_d' => '', 'datet_y' => '',
+                    'date_from' => '', 'date_to' => '',
                     'display_mode' => $result_params['display_mode']
                 );
             } 
@@ -349,7 +348,7 @@ class Controller_Results extends Controller {
                 
                 // Begin download
                 $csv_filename = ($result_params['display_mode'] == 'by_keyword') ? 'trendline_by_keyword_' : 'trendline_consensus_';
-                $csv_filename .= date($this->date_format, $result_params['date_from'])."_".date($this->date_format, $result_params['date_to']);
+                $csv_filename .= date(Kohana::config('myconf.date_format'), $result_params['date_from'])."_".date(Kohana::config('myconf.date_format'), $result_params['date_to']);
                 $this->request->redirect(Kohana::config('myconf.url.download')."?file=$csv_file&type=text/csv&name=$csv_filename.csv&delete_file=1");
                 
             } else {
@@ -366,7 +365,7 @@ class Controller_Results extends Controller {
             $view->page_content->project_data = $project_data;
             $view->page_content->chart_data_js = $chart_data_js;
             $view->page_content->chart_dimensions = "width: ".$this->chart_w."px; height: ".$this->chart_h."px;";
-            $view->page_content->date_range = date($this->date_format, $result_params['date_from'])." - ".date($this->date_format, $result_params['date_to']);
+            $view->page_content->date_range = date(Kohana::config('myconf.date_format'), $result_params['date_from'])." - ".date(Kohana::config('myconf.date_format'), $result_params['date_to']);
             $view->page_content->date_format_chart = $this->date_format_chart;
             $this->request->response = $view;
         }
@@ -382,7 +381,7 @@ class Controller_Results extends Controller {
         while($cur_date <= $date_to) {
             $num_metadata_entries = $this->model_results->num_metadata_entries($project_id, $cur_date, ($cur_date+$secs_in_day));
             if($output_mode == 'csv') {
-                $trendline_data .= date($this->date_format, $cur_date).",$num_metadata_entries\n";
+                $trendline_data .= date(Kohana::config('myconf.date_format'), $cur_date).",$num_metadata_entries\n";
             } else {
                 // Date format (year, month (0-11), day)
                 $trendline_data .= "[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."), $num_metadata_entries],";
@@ -418,7 +417,7 @@ class Controller_Results extends Controller {
         $secs_in_day = 24*60*60;
         while($cur_date <= $date_to) {
             if($output_mode == 'csv') {
-                $trendline_data .= date($this->date_format, $cur_date).",";
+                $trendline_data .= date(Kohana::config('myconf.date_format'), $cur_date).",";
             } else {
                 // Date format (year, month (0-11), day)
                 $trendline_data .= "[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."),";
@@ -451,26 +450,13 @@ class Controller_Results extends Controller {
         
         // TO DO: parameterize clustering; For example, limit to only docments within a certain date range
         
-        $this->build_lemur_index($project_id);
-        
-        // Generate cluster params & perform clustering
-        // NOTE: must delete clusterIndex.cl in order to re-cluster (which is created in dir where script was executed)
-        $this->cluster_params = $this->params_dir."/cluster.params";
-        $fh_cluster_params = fopen($this->cluster_params, 'w') or die($this->cluster_params.': cannot open file for writing');
-        fwrite($fh_cluster_params, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<threshold>$cluster_threshold</threshold>\n</parameters>");
-        fclose($fh_cluster_params);
-        
-        chdir($this->index_dir); // clusterIndex.cl file will be created here
-        $system_cmd = Kohana::config('myconf.lemur.bin')."/Cluster ".$this->cluster_params; // 2>&1 = put stderr in stdout
-        exec($system_cmd, $cluster_data, $return_code);
-        if($return_code != 0) {
-            echo "Error when running command &lt;$system_cmd&gt;: $return_code<br>";
-            exit;
-        }
+        $cluster_data = $this->cluster_all_docs($project_id, $cluster_threshold);
+        $cluster_data_exact = $this->cluster_all_docs($project_id, $this->clusters_threshold_exact); // Generate clusters where each cluster only contains identical documents
         
         // Delete old cluster data & add new cluster data to database
         $this->model_results->delete_clusters($project_id);
         $this->model_results->insert_clusters($cluster_data, $project_id);
+        $this->model_results->insert_clusters_exact($cluster_data_exact);
         
         $this->model_results->update_cluster_log(array(
             'project_id' => $project_id,
@@ -487,6 +473,27 @@ class Controller_Results extends Controller {
         
         // Redirect to cluster view
         $this->request->redirect("results/cluster_view/$project_id?cluster_order=$cluster_order");
+    }
+    
+    // Generates cluster param, performs clustering -> returns array of cluster_data
+    private function cluster_all_docs($project_id, $cluster_threshold)
+    {
+        $this->build_lemur_index($project_id);
+        
+        // NOTE: must delete clusterIndex.cl in order to re-cluster (which is created in dir where script was executed)
+        $this->cluster_params = $this->params_dir."/cluster.params";
+        $fh_cluster_params = fopen($this->cluster_params, 'w') or die($this->cluster_params.': cannot open file for writing');
+        fwrite($fh_cluster_params, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<threshold>$cluster_threshold</threshold>\n</parameters>");
+        fclose($fh_cluster_params);
+        
+        chdir($this->index_dir); // clusterIndex.cl file will be created here
+        $system_cmd = Kohana::config('myconf.lemur.bin')."/Cluster ".$this->cluster_params; // 2>&1 = put stderr in stdout
+        exec($system_cmd, $cluster_data, $return_code);
+        if($return_code != 0) {
+            echo "Error when running command &lt;$system_cmd&gt;: $return_code<br>";
+            exit;
+        }
+        return $cluster_data;
     }
 
     // Build Lemur Index from a directory of cached text documents
@@ -627,12 +634,13 @@ class Controller_Results extends Controller {
                     $rebuild_chart = 1;
                 }
                 $this->field_data = array(
-                    'negative_keywords_input' => '');
+                    'negative_keywords_input' => ''
+                );
             } // END negative keyword processing
             
             $project_data = array_pop($project_data);
             $cluster_log = array_pop($cluster_log);
-            $cluster_log['date_clustered'] = date($this->date_format, $cluster_log['date_clustered']);
+            $cluster_log['date_clustered'] = date(Kohana::config('myconf.date_format'), $cluster_log['date_clustered']);
             
             $view = View::factory('template');
             $view->page_title = $project_data['project_title']." - View Clusters";
@@ -687,7 +695,7 @@ class Controller_Results extends Controller {
                         $x_vals .= "$num_clusters,";
                         $y_vals .= "$cluster_quality,";
                         $size_vals .= "$dot_size_normalized,";
-                        // TEMP MAKE CLEANER!!!
+                        // TO DO: make this section cleaner:
                         // Get color of cluster (for testing negative keywords)
                         if($cluster_data['num_docs'] == $cluster_data['num_marked']) {
                             $color_vals .= "FF0000|";
@@ -882,7 +890,7 @@ class Controller_Results extends Controller {
         
         // Default results display
         $params = array(
-            'num_results' => 25,
+            'num_results' => 'all',
             'score_order' => 'desc'
         );
         
@@ -905,10 +913,37 @@ class Controller_Results extends Controller {
             );
         } 
         
+        // Count # of docs in each identical/exact cluster & collapse into single meta_id
+        $clusters_identical = array();
+        $cluster_data = $this->model_results->get_cluster_summary_exact($project_id, $cluster_id, $params);
+        $i = 0;
+        $last_cluster_id = 0;
+        $last_meta_id = 0;
+        foreach($cluster_data as $cluster) {
+            if($cluster['cluster_id_exact'] != $last_cluster_id) {
+                //$clusters_identical[$cluster['meta_id']] = 1;
+                $clusters_identical[$cluster['meta_id']] = array($cluster['text']);
+                $last_cluster_id = $cluster['cluster_id_exact'];
+                $last_meta_id = $cluster['meta_id'];
+            } else {
+                //$clusters_identical[$last_meta_id]++;
+                array_push($clusters_identical[$last_meta_id], $cluster['text']);
+                $clusters_identical[$cluster['meta_id']] = 0;
+            }
+            //print_r($clusters_identical[$cluster['meta_id']]); exit;
+            $i++;
+        }
+        
         $cluster_data = $this->model_results->get_cluster_summary($project_id, $cluster_id, $params);
         $i = 0;
         foreach($cluster_data as $cluster) {
-            $cluster_data[$i]['marked'] = $this->model_results->document_is_marked($cluster['meta_id']);
+            if($clusters_identical[$cluster['meta_id']] > 0) {
+                $cluster_data[$i]['marked'] = $this->model_results->document_is_marked($cluster['meta_id']);
+                //$cluster_data[$i]['num_identical'] = $clusters_identical[$cluster['meta_id']];
+                $cluster_data[$i]['identical_clusters'] = $clusters_identical[$cluster['meta_id']];
+            } else {
+                unset($cluster_data[$i]);
+            }
             $i++;
         }
         
@@ -919,11 +954,21 @@ class Controller_Results extends Controller {
         $this->request->response = $view;
     }
     
-    public function make_urls_clickable($text) 
-    { 
-        $text = eregi_replace('(((f|ht){1}tp://)[-a-zA-Z0-9@:%_\+.~#?&//=]+)', '<a href="\\1" target="_blank">\\1</a>', $text); 
-        $text = eregi_replace('([[:space:]()[{}])(www.[-a-zA-Z0-9@:%_\+.~#?&//=]+)', '\\1<a href="http://\\2" target="_blank">\\2</a>', $text);
-        return $text; 
+    function parse_urls($text, $maxurl_len = 35, $target = '_blank')
+    {
+        if(preg_match_all('/((ht|f)tps?:\/\/([\w\.]+\.)?[\w-]+(\.[a-zA-Z]{2,4})?[^\s\r\n\(\)"\'<>\,\!]+)/si', $text, $urls)) {
+            $offset1 = ceil(0.65 * $maxurl_len) - 2;
+            $offset2 = ceil(0.30 * $maxurl_len) - 1;
+            foreach (array_unique($urls[1]) AS $url) {
+                if ($maxurl_len AND strlen($url) > $maxurl_len)
+                    $urltext = substr($url, 0, $offset1) . '...' . substr($url, -$offset2);
+                else
+                    $urltext = $url;
+                
+                $text = str_replace($url, '<a href="'. $url .'" target="'. $target .'" title="'. $url .'">'. $urltext .'</a>', $text);
+            }
+        }
+        return $text;
     }
     
     private function order_array_numeric($array, $key, $order = "ASC") 

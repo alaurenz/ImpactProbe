@@ -23,6 +23,39 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <script type="text/javascript">
     $(document).ready(function(){
         
+        $('#keyword_tabs').tabs();
+        
+        $('#dialog').dialog({
+            autoOpen: false,
+            width: 600,
+            buttons: {
+                "Ok": function() { 
+                    // Get checked feeds & insert values into RSS feeds
+                    var rss_feeds = $("input[name='preloaded_rss']:checked").getCheckboxVal()
+                    for (var i=0; i<rss_feeds.length; i++) {
+                        $("#rss_feeds").addOption(rss_feeds[i], rss_feeds[i]); // add new RSS feed to combo box
+                    }
+                    $(this).dialog("close");
+                },
+                "Cancel": function() { 
+                    $(this).dialog("close");
+                } 
+            }
+        });
+        $('#dialog_link').click(function(){
+                $('#dialog').dialog('open');
+                return false;
+        });
+        
+        jQuery.fn.getCheckboxVal = function(){
+            var vals = [];
+            var i = 0;
+            this.each(function(){
+                vals[i++] = jQuery(this).val();
+            });
+            return vals;
+        }
+        
         $('#add_keyword_btn').click(function() {
             var new_keyword = $('#add_keyword_text').val().replace(/["]/g,'').trim(); // Remove quotes(") and trim whitespace
             if(new_keyword) {
@@ -155,91 +188,107 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     }
 </script>
 
-<a href="<?= Url::base() ?>">&laquo; Back</a>
+<a href="<?= Url::base() ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a>
+
 <h3><?= $mode ?> Monitoring Project</h3>
 
 <form name="params_form" id="params_form" action="<?= Url::base(TRUE) ?>params/<?= ($mode == "New") ? "new" : "modify/".$field_data['project_id'] ?>" method="post">
 
-<? if($errors) { 
-    echo '<p class="errors">'; 
-    foreach ($errors as $error_text) { echo $error_text."<br>"; }
-    echo '</p>';
-} ?>
+<? if($errors) { ?>
+<div class="ui-widget">
+    <div class="ui-state-error ui-corner-all" style="padding: 0 .7em;"> 
+    <p><? foreach ($errors as $error_text) { echo '<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>'.$error_text.'<br>'; } ?></p></div>
+</div>
+<? } ?>
+
 <p>
 <b>Project Title</b><br>
 <input type="text" name="project_title" id="project_title" value="<?= $field_data['project_title'] ?>">
 </p>
 
-<table width="600" border="0" cellspacing="0" cellpadding="3">
-<tr>
-    <td align="left">
-    <b>Keywords and Phrases</b> [help]<br>
-    <input type="text" name="add_keyword_text" id="add_keyword_text" value="">
-    <label for="exact_phrase"><input name="exact_phrase" id="exact_phrase" type="checkbox" value="1">exact</label>
-    <input type="button" id="add_keyword_btn" name="add_keyword_btn" value="&#043;">
-<? if($mode == "New") { ?>
-    <input type="button" id="remove_keyword_btn" name="remove_keyword_btn" value="&#8722;">
-    <br>
-    <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-     <? if(array_key_exists('keywords_phrases', $field_data)) {
-            foreach($field_data['keywords_phrases'] as $keyword_phrase) {
-                echo '<option value="'.$keyword_phrase.'">'.$keyword_phrase.'</option>';
-            }
-        } ?>
-    </select>
-<? } elseif($mode == "Modify") { ?>
-    <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
-    <br>
-    <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-     <? if(array_key_exists('keywords_phrases', $field_data)) { 
-            foreach($field_data['keywords_phrases'] as $keyword_phrase_id) {
-                $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
-                echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
-            }
-        } ?>
-    </select>
-    </td>
-    <td align="left">
-        <p><b>Deactivated Keywords and Phrases</b><br>
-        <input type="button" id="reactivate_keyword_btn" name="reactivate_keyword_btn" value="Reactivate">
+<b>Keywords and Phrases</b><br>
+
+<div id="keyword_tabs" style="font-size:12px;">
+    <ul>
+        <li><a href="#keyword_tabs-1">Positive</a></li>
+        <li><a href="#keyword_tabs-2">Negative</a></li>
+    </ul>
+    
+    <div id="keyword_tabs-1">
+        <table width="600" border="0" cellspacing="0" cellpadding="3">
+        <tr>
+        <td align="left">
+        <b>Active keywords/phrases</b><br>
+        <input type="text" name="add_keyword_text" id="add_keyword_text" value="">
+        <label for="exact_phrase"><input name="exact_phrase" id="exact_phrase" type="checkbox" value="1">exact</label>
+        <input type="button" id="add_keyword_btn" name="add_keyword_btn" value="&#043;">
+    <? if($mode == "New") { ?>
+        <input type="button" id="remove_keyword_btn" name="remove_keyword_btn" value="&#8722;">
         <br>
-        <select id="deactivated_keywords_phrases" name="deactivated_keywords_phrases[]" multiple="multiple">
-            <? if(array_key_exists('deactivated_keywords_phrases', $field_data)) {  
-                foreach($field_data['deactivated_keywords_phrases'] as $keyword_phrase_id) {
+        <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
+        <? if(array_key_exists('keywords_phrases', $field_data)) {
+                foreach($field_data['keywords_phrases'] as $keyword_phrase) {
+                    echo '<option value="'.$keyword_phrase.'">'.$keyword_phrase.'</option>';
+                }
+            } ?>
+        </select>
+    <? } elseif($mode == "Modify") { ?>
+        <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
+        <br>
+        <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
+        <? if(array_key_exists('keywords_phrases', $field_data)) { 
+                foreach($field_data['keywords_phrases'] as $keyword_phrase_id) {
                     $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
                     echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
                 }
             } ?>
-        </select></p>
-    </td>
-<? } ?>
-</tr>
-</table>
-<br>
-<table width="600" border="0" cellspacing="0" cellpadding="3">
-<tr>
-    <td align="left">
-    <b>Negative Keywords and Phrases</b> [help]<br>
-    <input type="text" name="add_neg_keyword_text" id="add_neg_keyword_text" value="">
-    <label for="neg_exact_phrase"><input name="neg_exact_phrase" id="neg_exact_phrase" type="checkbox" value="1">exact</label>
-    <input type="button" id="add_neg_keyword_btn" name="add_neg_keyword_btn" value="&#043;">
-    <input type="button" id="remove_neg_keyword_btn" name="remove_neg_keyword_btn" value="&#8722;">
-    <br>
-    <select id="negative_keywords" name="negative_keywords[]" multiple="multiple">
-        <? if(array_key_exists('negative_keywords', $field_data)) {
-            foreach($field_data['negative_keywords'] as $negative_keyword) {
-                if($mode == "New") {
-                    echo '<option value="'.$negative_keyword.'">'.$negative_keyword.'</option>';
-                } elseif($mode == "Modify") {
-                    // $negative_keyword is the keyword_id
-                    $quotes = ($field_data['keyword_phrase_data'][$negative_keyword]['exact_phrase']) ? '"' : '';
-                    echo '<option value="'.$negative_keyword.'">'.$quotes.$field_data['keyword_phrase_data'][$negative_keyword]['keyword_phrase'].$quotes.'</option>';
-                }
-            }
-        } ?>
-    </select>
-</tr>
-</table>
+        </select>
+        </td>
+        <td align="left">
+            <b>Deactivated keywords/phrases</b><br>
+            <input type="button" id="reactivate_keyword_btn" name="reactivate_keyword_btn" value="Reactivate">
+            <br>
+            <select id="deactivated_keywords_phrases" name="deactivated_keywords_phrases[]" multiple="multiple">
+                <? if(array_key_exists('deactivated_keywords_phrases', $field_data)) {  
+                    foreach($field_data['deactivated_keywords_phrases'] as $keyword_phrase_id) {
+                        $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
+                        echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
+                    }
+                } ?>
+            </select>
+        </td>
+     <? } ?>
+        </tr>
+        </table>
+    </div>
+    
+    <div id="keyword_tabs-2">
+        <table width="600" border="0" cellspacing="0" cellpadding="3">
+        <tr>
+            <td align="left">
+            <input type="text" name="add_neg_keyword_text" id="add_neg_keyword_text" value="">
+            <label for="neg_exact_phrase"><input name="neg_exact_phrase" id="neg_exact_phrase" type="checkbox" value="1">exact</label>
+            <input type="button" id="add_neg_keyword_btn" name="add_neg_keyword_btn" value="&#043;">
+            <input type="button" id="remove_neg_keyword_btn" name="remove_neg_keyword_btn" value="&#8722;">
+            <br>
+            <select id="negative_keywords" name="negative_keywords[]" multiple="multiple">
+                <? if(array_key_exists('negative_keywords', $field_data)) {
+                    foreach($field_data['negative_keywords'] as $negative_keyword) {
+                        if($mode == "New") {
+                            echo '<option value="'.$negative_keyword.'">'.$negative_keyword.'</option>';
+                        } elseif($mode == "Modify") {
+                            // $negative_keyword is the keyword_id
+                            $quotes = ($field_data['keyword_phrase_data'][$negative_keyword]['exact_phrase']) ? '"' : '';
+                            echo '<option value="'.$negative_keyword.'">'.$quotes.$field_data['keyword_phrase_data'][$negative_keyword]['keyword_phrase'].$quotes.'</option>';
+                        }
+                    }
+                } ?>
+            </select>
+        </tr>
+        </table>
+    </div>
+
+</div>
 
 <p><b>Enable/Disable Data Source APIs</b><br>
 <? 
@@ -255,8 +304,15 @@ foreach($api_sources as $api_source) {
         $rss_feed_chkbox_html = $chkbox_html;
     else
         echo $chkbox_html;
-}
-echo $rss_feed_chkbox_html; ?>
+} ?>
+<?= $rss_feed_chkbox_html; ?>
+
+<div id="dialog" title="Add pre-loaded RSS feeds">
+<? //foreach ?>
+<label for="rss_google_news"><input name="preloaded_rss" id="rss_google_news" type="checkbox" value="Searchable: http://news.google.com/news?hl=en&safe=off&um=1&ie=UTF-8&output=rss&q="> Google News</label><br>
+
+<label for="rss_nytimes"><input name="preloaded_rss" id="rss_nytimes" type="checkbox" value="http://feeds.nytimes.com/nyt/rss/HomePage"> New York Times</label><br>
+</div>
 
 <div id="rss_feed_form"<? if(!array_key_exists('api_rss_feed', $field_data)) echo ' style="display:none;"'; ?>>
 <table width="700" border="0" cellspacing="0" cellpadding="3">
@@ -305,6 +361,9 @@ echo $rss_feed_chkbox_html; ?>
 <? } ?>
 </tr>
 </table>
+
+<div style="padding:4px;"><a href="#" id="dialog_link" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-lightbulb"></span>Pre-loaded RSS Feeds</a></div>
+
 </div></p>
 
 <p><b>Gather interval</b>

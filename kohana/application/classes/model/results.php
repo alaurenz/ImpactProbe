@@ -157,10 +157,23 @@ class Model_Results extends Model {
             $i++;
         }
     }
+    public function insert_clusters_exact(Array $cluster_data)
+    {
+        $i = 0;
+        foreach($cluster_data as $cluster_pt) {
+            $cluster_info = explode(" ", $cluster_pt);
+            $cluster_data_db = array(
+                'meta_id' => $cluster_info[0],
+                'cluster_id_exact' => $cluster_info[1]
+            );
+            DB::insert('doc_clusters_exact', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
+            $i++;
+        }
+    }
     
     public function delete_clusters($project_id)
     {
-        DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
+        DB::Query(Database::DELETE, "DELETE FROM doc_clusters,doc_clusters_exact USING doc_clusters INNER JOIN doc_clusters_exact WHERE (doc_clusters.project_id = $project_id AND doc_clusters.meta_id = doc_clusters_exact.meta_id)")->execute();
     }
     
     public function get_clusters($project_id, $params = 0)
@@ -174,13 +187,29 @@ class Model_Results extends Model {
     public function get_cluster_summary($project_id, $cluster_id, $params)
     {
          $query = DB::select('doc_clusters.meta_id', 'doc_clusters.score', 'cached_text.text')->from('doc_clusters')
-                              ->where('project_id','=',$project_id)
-                              ->where('cluster_id','=',$cluster_id)
-                              ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
+                    ->where('project_id','=',$project_id)
+                    ->where('cluster_id','=',$cluster_id)
+                    ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
+                    
         if($params['num_results'] > 0) 
             $query->limit($params['num_results']);
         
         $query->order_by('doc_clusters.score', $params['score_order']);
+        
+        return $query->execute()->as_array();
+    }
+    public function get_cluster_summary_exact($project_id, $cluster_id, $params)
+    {
+         $query = DB::select('doc_clusters.meta_id', 'doc_clusters_exact.cluster_id_exact', 'cached_text.text')->from('doc_clusters')
+                    ->where('project_id','=',$project_id)
+                    ->where('cluster_id','=',$cluster_id)
+                    ->join('doc_clusters_exact')->on('doc_clusters.meta_id','=','doc_clusters_exact.meta_id')
+                    ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
+        
+        //if($params['num_results'] > 0) 
+        //    $query->limit($params['num_results']);
+        
+        $query->order_by('doc_clusters_exact.cluster_id_exact', 'ASC');
         
         return $query->execute()->as_array();
     }

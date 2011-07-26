@@ -105,18 +105,42 @@ CREATE TABLE IF NOT EXISTS `doc_clusters` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `doc_clusters_exact`
+--
+
+CREATE TABLE IF NOT EXISTS `doc_clusters_exact` (
+  `meta_id` int(10) unsigned NOT NULL,
+  `cluster_id_exact` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`meta_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `gather_log`
 --
 
 CREATE TABLE IF NOT EXISTS `gather_log` (
-  `search_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `project_id` int(10) unsigned NOT NULL,
-  `search_query` varchar(600) NOT NULL,
   `date` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`log_id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `gather_queries`
+--
+
+CREATE TABLE IF NOT EXISTS `gather_queries` (
+  `query_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `log_id` int(10) unsigned NOT NULL,
+  `search_query` varchar(600) NOT NULL,
   `results_gathered` mediumint(6) unsigned NOT NULL,
   `error` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`search_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`query_id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 ;
 
 -- --------------------------------------------------------
 

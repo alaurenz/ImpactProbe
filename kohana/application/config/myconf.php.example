@@ -22,7 +22,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 defined('SYSPATH') or die('No direct script access.');
  
 return array(
-    'app_name' => 'Impact Probe',
+    // URLs and paths ***EDIT THESE*** 
     'url' => array(
         'images' => 'http://localhost/ImpactProbe/images/',
         'js' => 'http://localhost/ImpactProbe/js/',
@@ -40,5 +40,9 @@ return array(
         'indexes' => '~/ImpactProbe/data/lemur/indexes',
         'params' => '~/ImpactProbe/data/lemur/params',
         'stopwords_list' => '~/ImpactProbe/data/lemur/stopwords.list' 
-    )
+    ),
+    
+    // Other configuration settings
+    'app_name' => 'Impact Probe',
+    'date_format' => "M-d-Y",
 );

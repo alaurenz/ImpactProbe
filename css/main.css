@@ -64,8 +64,25 @@ html, body {
     padding-left:10px; padding-right:10px; padding-bottom:10px;
 }
 
+#chart_div {
+    z-index:1;
+}
+
 .table_header { background:#0000A9; color:#FFFFFF; }
+
+/* Buttons/UI */
+.button_noicon {cursor:pointer; padding: .4em .8em .4em 11px;text-decoration: none;position: relative; font-size:13px;}
+.button_noicon_sm {padding: .2em .5em .2em 7px;text-decoration: none;position: relative; font-size:12px;}
+.button_sm {padding: .2em .5em .2em 18px;text-decoration: none;position: relative; font-size:12px;}
+.button_sm span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+.button_lg {padding: .4em .8em .4em 20px;text-decoration: none;position: relative; font-size:13px;}
+.button_lg span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+
+ul#icons {margin: 0; padding: 0;}
+ul#icons li {margin-left: 4px; position: relative; padding: 3px 0; cursor: pointer; float: left;  list-style: none;}
+ul#icons span.ui-icon {float: left; margin: 0 3px;}
 
 .bg_white { background:#FFFFFF; }
 .bg_grey { background:#E1E1E1; }
 .bg_red { background:#FF0000; }
+.bg_light_blue { background:#D8ECF5; }

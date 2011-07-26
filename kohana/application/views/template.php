@@ -28,8 +28,12 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <meta name="description" content="">
 <meta name="keywords" content="">
 <link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>main.css" type="text/css">
-<script src="<?= Kohana::config('myconf.url.js'); ?>jquery.min.js" type="text/javascript"></script>
+<link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>dark-hive/jquery-ui-1.8.14.custom.css" type="text/css">
+<script src="<?= Kohana::config('myconf.url.js'); ?>jquery-1.5.1.min.js" type="text/javascript"></script>
 <script src="<?= Kohana::config('myconf.url.js'); ?>jquery.selectboxes.min.js" type="text/javascript"></script>
+<script src="<?= Kohana::config('myconf.url.js'); ?>jquery-ui-1.8.14.custom.min.js" type="text/javascript"></script>
+<script src="<?= Kohana::config('myconf.url.js'); ?>jquery-ui-global.js" type="text/javascript"></script>
+
 <script type="text/javascript" src="<?= Kohana::config('myconf.url.js'); ?>mapper.js"></script>
 
 <script type="text/javascript" language="javascript" src="<?= Kohana::config('myconf.url.js'); ?>lytebox.js"></script>
@@ -50,7 +54,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <div>
 
 <div id="header">
-<img src="<?= Kohana::config('myconf.url.images'); ?>impact_probe_logo.jpg" width="322" height="124" alt="Impact Probe">
+<a href="<?= Url::base() ?>"><img src="<?= Kohana::config('myconf.url.images'); ?>impact_probe_logo.jpg" width="322" height="124" alt="Impact Probe" border="0"></a>
 </div>
 
 <div id="container">
