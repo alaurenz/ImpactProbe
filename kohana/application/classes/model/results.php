@@ -41,21 +41,30 @@ class Model_Results extends Model {
     
     public function get_results($project_id, $params)
     {
-        $query = DB::select('metadata.*', 'keyword_metadata.*', 'metadata_urls.url', 'api_sources.api_name')->from('metadata')
+        $query = DB::select('metadata.*', 'metadata_urls.url', 'api_sources.api_name')->from('metadata') // 'doc_clusters_exact.cluster_id_exact'  'keyword_metadata.*'
                      ->join('metadata_urls')->on('metadata.url_id','=','metadata_urls.url_id')
-                     ->join('keyword_metadata')->on('keyword_metadata.meta_id','=','metadata.meta_id')
-                     ->join('api_sources')->on('metadata.api_id','=','api_sources.api_id')
-                     ->where('metadata.project_id','=',$project_id);
+                     //->join('keyword_metadata')->on('keyword_metadata.meta_id','=','metadata.meta_id')
+                     ->join('api_sources')->on('metadata.api_id','=','api_sources.api_id');
+                     
+        //if($params['sort_by'] == 'num_identical')
+            //$query->join('doc_clusters_exact')->on('metadata.meta_id','=','doc_clusters_exact.meta_id');
+        
+        $query->where('metadata.project_id','=',$project_id);
               
+        $query->limit($params['limit'])->offset($params['offset']);
+        
         if($params['date_from'] > 0) 
             $query->where('metadata.date_published','>=',$params['date_from']);
         if($params['date_to'] > 0) 
             $query->where('metadata.date_published','<=',$params['date_to']);
-         
-        $query->limit($params['limit'])->offset($params['offset']);
         
-        $query->order_by('metadata.date_published', strtoupper($params['order']))
-              ->order_by('keyword_metadata.meta_id'); // Groups `keyword_metadata` rows together for each `metadata` entry
+        //if($params['sort_by'] == 'num_identical')
+            //$query->order_by('doc_clusters_exact.cluster_id_exact');
+        //else
+        if($params['sort_by'] !== 'num_identical')
+            $query->order_by($params['sort_by'], strtoupper($params['order']));
+              
+              //->order_by('keyword_metadata.meta_id'); // Groups `keyword_metadata` rows together for each `metadata` entry
         
         return $query->execute()->as_array();
     }
@@ -82,7 +91,7 @@ class Model_Results extends Model {
         return DB::select()->from('keyword_metadata')->where('meta_id','=',$meta_id)->execute()->as_array();
     }
     
-    public function num_metadata_entries($project_id, $date_from = 0, $date_to = 0, $keyword_id = 0)
+    public function num_metadata_entries($project_id, $date_from = 0, $date_to = 0)
     {
         $query = DB::select(DB::expr('COUNT(meta_id) AS total'))->from('metadata')->where('project_id','=',$project_id);
         
@@ -124,6 +133,19 @@ class Model_Results extends Model {
         return $result[0]['text'];
     }
     
+    public function get_total_results($project_id)
+    {
+        return DB::select(DB::expr('COUNT(meta_id) AS total'))->from('metadata')->where('project_id','=',$project_id)->execute()->get('total');
+    }
+    
+    public function get_metadata_ids($project_id, $date_from, $date_to)
+    {
+        return DB::select('meta_id')->from('metadata')
+                                    ->where('project_id','=',$project_id)
+                                    ->where('date_published','>=',$date_from)
+                                    ->where('date_published','<=',$date_to)->execute()->as_array();
+    }
+    
     public function mark_document($project_id, $meta_id)
     {
         DB::insert('mark_negative_keywords', array('meta_id', 'project_id'))->values(array($meta_id, $project_id))->execute();
@@ -142,8 +164,12 @@ class Model_Results extends Model {
         DB::delete('mark_negative_keywords')->where('project_id','=',$project_id)->execute();
     }
     
-    public function insert_clusters(Array $cluster_data, $project_id)
+    public function insert_clusters(Array $cluster_data, $project_id, $time_plot_id = 0)
     {
+        $sql_table = 'doc_clusters';
+        if($time_plot_id > 0)
+            $sql_table = 'doc_clusters_time';
+        
         $i = 0;
         foreach($cluster_data as $cluster_pt) {
             $cluster_info = explode(" ", $cluster_pt);
@@ -153,12 +179,18 @@ class Model_Results extends Model {
                 'score' => $cluster_info[2],
                 'project_id' => $project_id
             );
-            DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
+            if($time_plot_id > 0)
+                $cluster_data_db['time_plot_id'] = $time_plot_id;
+            DB::insert($sql_table, array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
             $i++;
         }
     }
-    public function insert_clusters_exact(Array $cluster_data)
+    public function insert_clusters_exact(Array $cluster_data, $time_plot_id = 0)
     {
+        $sql_table = 'doc_clusters_exact';
+        if($time_plot_id > 0)
+            $sql_table = 'doc_clusters_time_exact';
+        
         $i = 0;
         foreach($cluster_data as $cluster_pt) {
             $cluster_info = explode(" ", $cluster_pt);
@@ -166,7 +198,9 @@ class Model_Results extends Model {
                 'meta_id' => $cluster_info[0],
                 'cluster_id_exact' => $cluster_info[1]
             );
-            DB::insert('doc_clusters_exact', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
+            if($time_plot_id > 0)
+                $cluster_data_db['time_plot_id'] = $time_plot_id;
+            DB::insert($sql_table, array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
             $i++;
         }
     }
@@ -175,41 +209,65 @@ class Model_Results extends Model {
     {
         DB::Query(Database::DELETE, "DELETE FROM doc_clusters,doc_clusters_exact USING doc_clusters INNER JOIN doc_clusters_exact WHERE (doc_clusters.project_id = $project_id AND doc_clusters.meta_id = doc_clusters_exact.meta_id)")->execute();
     }
-    
-    public function get_clusters($project_id, $params = 0)
+    public function delete_clusters_time($project_id)
     {
-        return DB::select()->from('doc_clusters')
-                           ->where('project_id','=',$project_id)
-                           ->order_by('meta_id', 'ASC')
-                           ->execute()->as_array();
+        DB::Query(Database::DELETE, "DELETE FROM doc_clusters_time,doc_clusters_time_exact USING doc_clusters_time INNER JOIN doc_clusters_time_exact WHERE (doc_clusters_time.project_id = $project_id AND doc_clusters_time.meta_id = doc_clusters_time_exact.meta_id)")->execute();
     }
     
-    public function get_cluster_summary($project_id, $cluster_id, $params)
+    public function get_clusters($project_id, $time_plot_id = 0)
     {
-         $query = DB::select('doc_clusters.meta_id', 'doc_clusters.score', 'cached_text.text')->from('doc_clusters')
+        $sql_table = 'doc_clusters';
+        if($time_plot_id > 0)
+            $sql_table = 'doc_clusters_time';
+            
+        $query = DB::select()->from($sql_table)
+                           ->where('project_id','=',$project_id);
+        if($time_plot_id > 0)
+            $query->where('time_plot_id','=',$time_plot_id);
+        return $query->order_by('meta_id', 'ASC')->execute()->as_array();
+    }
+    
+    public function get_cluster_summary($project_id, $cluster_id, $params, $time_plot_id = 0)
+    {
+        $sql_table = 'doc_clusters';
+        if($time_plot_id > 0)
+            $sql_table = 'doc_clusters_time';
+            
+         $query = DB::select($sql_table.'.meta_id', $sql_table.'.score', 'cached_text.text')->from($sql_table)
                     ->where('project_id','=',$project_id)
                     ->where('cluster_id','=',$cluster_id)
-                    ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
-                    
+                    ->join('cached_text')->on($sql_table.'.meta_id','=','cached_text.meta_id');
+        if($time_plot_id > 0)
+            $query->where($sql_table.'.time_plot_id','=',$time_plot_id);
+            
         if($params['num_results'] > 0) 
             $query->limit($params['num_results']);
         
-        $query->order_by('doc_clusters.score', $params['score_order']);
+        $query->order_by($sql_table.'.score', $params['score_order']);
         
         return $query->execute()->as_array();
     }
-    public function get_cluster_summary_exact($project_id, $cluster_id, $params)
+    public function get_cluster_summary_exact($project_id, $cluster_id, $params, $time_plot_id = 0)
     {
-         $query = DB::select('doc_clusters.meta_id', 'doc_clusters_exact.cluster_id_exact', 'cached_text.text')->from('doc_clusters')
+        $sql_table = 'doc_clusters';
+        $sql_table_exact = 'doc_clusters_exact';
+        if($time_plot_id > 0) {
+            $sql_table = 'doc_clusters_time';
+            $sql_table_exact = 'doc_clusters_time_exact';
+        }
+        $query = DB::select($sql_table.'.meta_id', $sql_table_exact.'.cluster_id_exact', 'cached_text.text')->from($sql_table)
                     ->where('project_id','=',$project_id)
                     ->where('cluster_id','=',$cluster_id)
-                    ->join('doc_clusters_exact')->on('doc_clusters.meta_id','=','doc_clusters_exact.meta_id')
-                    ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
-        
+                    ->join($sql_table_exact)->on($sql_table.'.meta_id','=',$sql_table_exact.'.meta_id')
+                    ->join('cached_text')->on($sql_table.'.meta_id','=','cached_text.meta_id');
+        if($time_plot_id > 0) {
+            $query->where($sql_table_exact.'.time_plot_id','=',$time_plot_id)
+                  ->where($sql_table.'.time_plot_id','=',$time_plot_id);
+        }
         //if($params['num_results'] > 0) 
         //    $query->limit($params['num_results']);
         
-        $query->order_by('doc_clusters_exact.cluster_id_exact', 'ASC');
+        $query->order_by($sql_table_exact.'.cluster_id_exact', 'ASC');
         
         return $query->execute()->as_array();
     }

@@ -42,6 +42,7 @@ class Controller_Params extends Controller {
         $view->page_content->mode = "New";
         
         $api_sources = $this->model_params->get_api_sources();
+        $preloaded_rss_feeds = $this->model_params->get_preloaded_rss_feeds();
         
         $this->errors = "";
         if($_POST) {
@@ -78,7 +79,7 @@ class Controller_Params extends Controller {
                 }
                 
                 if(array_key_exists('api_rss_feed', $this->field_data))
-                	$this->model_params->insert_rss_feeds($project_id, $this->field_data['rss_feeds']);
+                    $this->model_params->insert_rss_feeds($project_id, $this->field_data['rss_feeds']);
                 
                 // Create directory to store cached text & make it writable (must be done using system command for permissions work properly)
                 $system_cmd = "mkdir -m 777 ".Kohana::config('myconf.lemur.docs')."/$project_id";
@@ -104,7 +105,7 @@ class Controller_Params extends Controller {
                 'gather_interval' => 'daily',
                 'gather_now' => 1
             );
-            // Set all APIs active (except RSS Feeds)
+            // Set all APIs active except RSS Feeds
             foreach($api_sources as $api_source)
                  $this->field_data['api_'.$api_source['gather_method_name']] = 1; 
             unset($this->field_data['api_rss_feed']); // Disable RSS Feed by default
@@ -113,6 +114,7 @@ class Controller_Params extends Controller {
         $view->page_content->errors = $this->errors;
         $view->page_content->field_data = $this->field_data;
         $view->page_content->api_sources = $api_sources;
+        $view->page_content->preloaded_rss_feeds = $preloaded_rss_feeds;
         $this->request->response = $view;
     }
     
@@ -142,6 +144,7 @@ class Controller_Params extends Controller {
             $this->project_data = array_pop($project_data);
             
             $api_sources = $this->model_params->get_api_sources();
+            $preloaded_rss_feeds = $this->model_params->get_preloaded_rss_feeds();
             $this->field_data['keyword_phrase_data'] = $this->model_params->get_keyword_phrase_data($project_id); // Contains data for both regular and negative keywords
             $this->field_data['rss_feed_data'] = $this->model_params->get_rss_feed_data($project_id);
             
@@ -251,6 +254,7 @@ class Controller_Params extends Controller {
             $view->page_content->errors = $this->errors;
             $view->page_content->field_data = $this->field_data;
             $view->page_content->api_sources = $api_sources;
+            $view->page_content->preloaded_rss_feeds = $preloaded_rss_feeds;
             $this->request->response = $view;
         }
     }

@@ -118,6 +118,12 @@ class Model_Params extends Model {
         DB::delete('active_api_sources')->where('project_id','=',$project_id)->execute();
     }
     
+    public function get_preloaded_rss_feeds()
+    {
+        return DB::select('preloaded_rss_feeds.*', 'preloaded_rss_feed_cats.cat_name')->from('preloaded_rss_feeds')
+                               ->join('preloaded_rss_feed_cats')->on('preloaded_rss_feed_cats.cat_id','=','preloaded_rss_feeds.cat_id')
+                               ->order_by('preloaded_rss_feed_cats.cat_id', 'DESC')->execute()->as_array();
+    }
     public function insert_rss_feeds($project_id, Array $rss_feeds)
     {
         foreach($rss_feeds as $rss_feed_url) {

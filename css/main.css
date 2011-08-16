@@ -42,20 +42,17 @@ html, body {
 }
 
 /* main */
-#project_title { width:275px; }
-#add_keyword { width:150px; }
-
 #keywords_phrases, #deactivated_keywords_phrases {
-    width:276px;
+    width:306px;
     height:80px;
     background-color:#317DFF;
 }
 #negative_keywords {
-    width:276px;
+    width:306px;
     height:80px;
     background-color:#FF595C;
 }
-#rss_feeds, #deactivated_rss_feeds {
+#rss_feeds, #deactivated_rss_feeds, #preloaded_rss_feeds {
     width:327px;
     height:90px;
 }

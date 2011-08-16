@@ -68,13 +68,13 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 
 <script type="text/javascript">
     $(document).ready(function(){
-        $("#accordion").accordion({ 
+        $('#accordion').accordion({ 
             header: "h3",
             collapsible: true,
             autoHeight: false,
             clearStyle: true
         });
-        $("#accordion").accordion("activate", false);
+        $('#accordion').accordion("activate", false);
     });
 </script>
 

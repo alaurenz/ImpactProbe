@@ -49,13 +49,13 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             <td align="center"><?= date(Kohana::config('myconf.date_format'), $project['date_created']) ?></td>
             <td align="center">
             <ul id="icons" class="ui-widget ui-helper-clearfix">
-                <a href="<?= Url::base(TRUE).'results/view/'.$project['project_id'] ?>"><li class="button_hover ui-state-default ui-corner-all" title="Results"><span class="ui-icon ui-icon-signal"></span></li></a>
-                <a href="<?= Url::base(TRUE).'gather/log/'.$project['project_id'] ?>"><li class="button_hover ui-state-default ui-corner-all" title="Gather log"><span class="ui-icon ui-icon-note"></span></li></a>
-                <a href="<?= Url::base(TRUE).'params/modify/'.$project['project_id'] ?>"><li class="button_hover ui-state-default ui-corner-all" title="Edit parameters"><span class="ui-icon ui-icon-pencil"></span></li></a>
+                <li class="button_hover ui-state-default ui-corner-all" title="Results" onclick="location.href='<?= Url::base(TRUE).'results/view/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-signal"></span></li>
+                <li class="button_hover ui-state-default ui-corner-all" title="Gather log" onclick="location.href='<?= Url::base(TRUE).'gather/log/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-note"></span></li>
+                <li class="button_hover ui-state-default ui-corner-all" title="Edit parameters" onclick="location.href='<?= Url::base(TRUE).'params/modify/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-pencil"></span></li>
                 
-                <a href="<?= Url::base(TRUE).'home/project_change_state/'.$project['project_id'] ?>"><li class="button_hover ui-state-default ui-corner-all" title="<?= ($project['active']) ? 'Deactivate project' : 'Activate project' ?>"><span class="ui-icon <?= ($project['active']) ? 'ui-icon-stop' : 'ui-icon-play' ?>"></span></li></a>
+                <li class="button_hover ui-state-default ui-corner-all" title="<?= ($project['active']) ? 'Deactivate project' : 'Activate project' ?>" onclick="location.href='<?= Url::base(TRUE).'home/project_change_state/'.$project['project_id'] ?>'"><span class="ui-icon <?= ($project['active']) ? 'ui-icon-stop' : 'ui-icon-play' ?>"></span></li>
                 
-                <a href="javascript:<?= ($project['active']) ? 'ShowWarning()' : 'DeleteProject('.$project['project_id'].')' ?>"><li class="button_hover ui-state-default ui-corner-all" title="Delete project"><span class="ui-icon ui-icon-trash"></span></li></a>
+                <li class="button_hover ui-state-default ui-corner-all" title="Delete project" onclick="javascript:<?= ($project['active']) ? 'ShowWarning()' : 'DeleteProject('.$project['project_id'].')' ?>"><span class="ui-icon ui-icon-trash"></span></li>
             </ul>
             </td>
         </tr>

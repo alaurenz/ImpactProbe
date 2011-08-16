@@ -24,24 +24,62 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     $(document).ready(function(){
         $('#recluster_form').submit(function() {
             // Validate threshold value
-            if(!isNumeric($("#cluster_threshold").val())) {
+            if(!isNumeric($('#cluster_threshold').val())) {
                 alert("Threshold is invalid.");
                 return false;
             }
-            $("#submit_btn").attr('value', 'Clustering...'); 
-            $("#submit_btn").attr('disabled', 'disabled'); // Disable submit button
+            var submit_btn = "#submit_btn";
+            if($('#cluster_time').is(':checked')) {
+                submit_btn = "#submit_btn_time";
+            }
+            $(submit_btn).attr('value', 'Clustering...'); 
+            $(submit_btn).attr('disabled', 'disabled'); // Disable submit button
         });
         
-        $("#negative_keywords_input").focus(function () {
+        $('#cluster_time').click(function() {
+            if($('#cluster_time').is(':checked')) {
+                $('#cluster_time_form').css('display', '');
+            } else {
+                $('#cluster_time_form').css('display', 'none');
+            }
+        });
+        
+        $('#slider').slider({
+            value: <?= $slider['max'] ?>,
+            min: <?= $slider['min'] ?>,
+            max: <?= $slider['max'] ?>,
+            step: <?= $slider['step'] ?>,
+            slide: function( event, ui ) {
+                for(i=0; i<<?= $slider['increments'] ?>; i++) {
+                    var range_value = <?= $slider['min'] ?> + i*<?= $slider['step'] ?>;
+                    $('#scatter'+range_value).hide();
+                }
+                $('#scatterall').hide();
+                
+                if(ui.value == <?= $slider['max'] ?>) {
+                    $('#amount').val("all");
+                    $('#scatterall').show();
+                } else {
+                    $('#amount').val(ui.value);
+                    $('#scatter'+ui.value).show();
+                }
+            }
+        });
+        $('#amount').val("all");
+        //$( "#amount" ).val( "$" + $( "#slider" ).slider( "value" ) );
+
+        // BAD/REDUNDANT CODE
+        $('#negative_keywords_input').focus(function () {
             if($(this).val() == "Enter negative keywords...") {
                 $(this).attr('value', '');
             } 
         });
-        $("#negative_keywords_input").focusout(function () {
+        $('#negative_keywords_input').focusout(function () {
             if(!$(this).val()) {
                 $(this).attr('value', 'Enter negative keywords...');
             } 
         });
+        // END BAD/REDUNDANT CODE
     });
     
     function isNumeric(n) {
@@ -59,7 +97,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 </script>
 
 <style> 
-#toggle_box { width: 260px; height: auto; padding: 0.4em; position: relative; }
+#toggle_box { width: 324px; text-align:center; height: auto; padding: 0.4em; position: relative; }
 #toggle_box h3 { margin: 0; padding: 0.4em; text-align: center; }
 </style> 
 
@@ -69,19 +107,29 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <h3>Clustering - <?= $project_data['project_title'] ?></h3>
 <div style="position:relative; float:left; width:450px; height:auto;">
     
-    <form name="recluster_form" id="recluster_form" method="post" action="<?= Url::base().'index.php/results/cluster/'.$project_data['project_id'] ?>">
-    <p><b>Last clustered:</b> <?= $cluster_log['date_clustered'] ?> (<?= $cluster_log['num_docs'] ?> documents)<br>
+    <form name="recluster_form" id="recluster_form" method="get" action="<?= Url::base().'index.php/results/cluster/'.$project_data['project_id'] ?>">
+    <? if($total_results != $cluster_params['num_docs'] AND $cluster_params['threshold'] == $cluster_params['default_threshold']) { ?>
+    <b>Last clustered:</b> <?= date(Kohana::config('myconf.date_format'), $cluster_params['date_clustered']) ?> (<b><?= $cluster_params['num_docs'] ?></b> of <?= $total_results ?> total documents)
+    <br><span style="color:#0000FF;"><b>NOTE:</b> data has been collected or deleted since last clustering was performed. You must recluster to see the new data on the plot below.</span><br><? } ?>
     <b>Threshold:</b>
-    <input name="cluster_threshold" type="text" id="cluster_threshold" value="<?= $cluster_log['threshold'] ?> " size="3" maxlength="8">
+    <input name="cluster_threshold" type="text" id="cluster_threshold" value="<?= $cluster_params['threshold'] ?> " size="3" maxlength="8">
     <select name="cluster_order">
-    <option value="arbitrarily"<? if($cluster_log['order'] == 'arbitrarily') { echo " selected"; } ?>>scatter clusters</option>
-    <option value="cluster_size"<? if($cluster_log['order'] == 'cluster_size') { echo " selected"; } ?>>order by cluster size</option>
+    <option value="arbitrarily"<? if($cluster_params['order'] == 'arbitrarily') { echo " selected"; } ?>>scatter clusters</option>
+    <option value="cluster_size"<? if($cluster_params['order'] == 'cluster_size') { echo " selected"; } ?>>order by cluster size</option>
     </select>
-    <input type="submit" id="submit_btn" name="submit_btn" value="Recluster"></p>
+    <input type="submit" id="submit_btn" name="submit_btn" value="Recluster">
+    <br>
+    <label for="cluster_time"><input name="cluster_time" id="cluster_time" type="checkbox" value="1"> Show how clusters change over time</label>
+    <div id="cluster_time_form" style="position:relative; display:none;">
+    From <input type="text" class="datepicker" id="date_from" name="date_from" size="11">
+    to
+    <input type="text" class="datepicker" id="date_to" name="date_to" size="11">
+    <input type="submit" id="submit_btn_time" name="submit_btn_time" value="Cluster">
+    </div>
     </form>
 
     <? if($singleton_clusters > 0) { ?>
-    <p><a href="javascript:startLyteframe('Singleton clusters (<?= $singleton_clusters ?> total)', '<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>')" class="button_noicon button_hover ui-state-default ui-corner-all">View singleton clusters (<?= $singleton_clusters ?>)</a></p>
+    <p><a href="javascript:startLyteframe('Singleton clusters (<?= $singleton_clusters ?> total)', '<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>')" class="button_noicon button_hover ui-state-default ui-corner-all"<? if($singleton_cluster_marked) echo ' style="background:#FF0000;"'; ?>>View singleton clusters (<?= $singleton_clusters ?>)</a></p>
     <? } ?>
 </div>
 
@@ -91,8 +139,11 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <div id="toggle_box" class="ui-widget-content ui-corner-all"> 
     <h3 class="ui-widget-header ui-corner-all">Relevancy optimization tool</h3> 
     <div style="padding:5px;">
-        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value='<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keywords...'; ?>' size="26">
+        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keywords...'; ?>"  style="width:190px;">
         <a href="#" onclick="document.test_negative_keywords_form.submit()" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-arrowreturn-1-e"></span>Test</a>
+        <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
+        <a href="#" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
+        <? } ?>
     </div>
     <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
     <div style="padding:2px;">
@@ -105,11 +156,29 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     </form>
 </div>
 
+<div style="position:relative; padding-top:5px; float:left; width:800px;">
+    <? if($slider['step'] != 0 AND $slider['max'] > ($slider['increments']*$slider['step'])) { ?>
+    <div style="position:relative; width:760px; height:36px;"> 
+        <div id="slider_text"> 
+        <label for="amount">Hide clusters with more than </label> 
+        <input type="text" id="amount" style="width:23px; border:0; color:#f6931f; font-weight:bold;" /> documents
+        </div> 
+        <div id="slider"></div> 
+    </div>
+    <? } ?>
+    <div style="position:relative; float:left; width:750px; height:380px;">
+        <? for($i = 0; $i < $slider['increments']; $i++) { 
+            $range_value = $slider['min'] + $i*$slider['step'];
+            echo '<div id="scatter'.$range_value.'" style="position:absolute; left:0; top:0; display:none;">'.$chart_html[$i].'</div>'; 
+        }
+        echo '<div id="scatterall" style="position:absolute; left:0; top:0;">'.$chart_html[$slider['increments']].'</div>'; 
+        ?>
+    </div>
 
-<div style="position:relative; float:left; width:800px;">
-    <?= $chart_html ?>
+    <div style="position:relative; float:left; width:760px; height:35px;">
+        <a href="<?= Url::base(TRUE).'results/view/'.$project_data['project_id'] ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a>
+    </div>
     
-    <p><a href="<?= Url::base(TRUE).'results/view/'.$project_data['project_id'] ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a></p>
 </div>
 
 </div>

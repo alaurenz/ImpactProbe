@@ -22,13 +22,13 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 ?>
 <script type="text/javascript">
     $(document).ready(function(){
-        $("#accordion").accordion({ 
+        $('#accordion').accordion({ 
             header: "h3",
             autoHeight: false,
             clearStyle: true,
             collapsible: true
         });
-        $("#accordion").accordion("activate", false);
+        $('#accordion').accordion("activate", false);
     });
     function GoToPage(page_id) {
         $('#gather_log').attr('action', '?page=' + page_id);
@@ -69,13 +69,12 @@ Show:
 <select name="num_results">
   <option value="1" <? if($field_data['num_results'] == 1) { echo("selected"); } ?>>5</option>
   <option value="10" <? if($field_data['num_results'] == 10) { echo("selected"); } ?>>10</option>
-
   <option value="25" <? if($field_data['num_results'] == 25) { echo("selected"); } ?>>25</option>
   <option value="50" <? if($field_data['num_results'] == 50) { echo("selected"); } ?>>50</option>
   <option value="100" <? if($field_data['num_results'] == 100) { echo("selected"); } ?>>100</option>
   <option value="250" <? if($field_data['num_results'] == 250) { echo("selected"); } ?>>250</option>
   <option value="500" <? if($field_data['num_results'] == 500) { echo("selected"); } ?>>500</option>
-  <option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>
+  <!--<option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>-->
 </select>
 &nbsp;&nbsp;
 <input type="submit" name="Submit" value="View">
