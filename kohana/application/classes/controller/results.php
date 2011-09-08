@@ -835,8 +835,8 @@ class Controller_Results extends Controller {
             $chart_dir = Kohana::config('myconf.path.charts')."/cluster_$project_id";
             if(floatval($cluster_params['threshold']) == $this->default_cluster_threshold) {
                 $chart_dir = Kohana::config('myconf.path.charts')."/cluster_default_$project_id";
-                $rebuild_chart = 0;
             }
+            
             if($rebuild_chart OR !is_dir($chart_dir)) {
                 // Generate chart data
                 $num_clusters = 0;
@@ -866,6 +866,7 @@ class Controller_Results extends Controller {
                                 $x_vals[$i] .= "$num_clusters,";
                                 $y_vals[$i] .= "$cluster_quality,";
                                 $size_vals[$i] .= "$dot_size_normalized,";
+                                
                                 // to do: make this section cleaner:
                                 // get color of cluster (for testing negative keywords)
                                 if($cluster_data['num_docs'] == $cluster_data['num_marked']) {

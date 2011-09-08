@@ -164,7 +164,7 @@ echo $page_links; ?>
             <LI><span style="color:#FFF; font-size:12px;" onclick="SortBy('metadata.date_retrieved', '<?= $sort_by_click ?>')"><b>Date Retrieved</b></span></LI>
             </ul>
         </td>
-        <td align="center">
+        <!--<td align="center">
             <ul id="icons" class="ui-widget" style="width:110px;">
             <? $sort_by_click = 'desc';
             if($field_data['sort_by'] == 'num_identical') { ?>
@@ -178,7 +178,7 @@ echo $page_links; ?>
             <? } ?>
             <LI><span style="color:#FFF; font-size:12px;" onclick="SortBy('num_identical', '<?= $sort_by_click ?>')"><b>&#035; Identical</b></span></LI>
             </ul>
-        </td>
+        </td>-->
         <td align="left">
             <ul id="icons" class="ui-widget" style="width:110px;">
             <? $sort_by_click = 'asc';
@@ -203,7 +203,7 @@ echo $page_links; ?>
             <td align="left"><?= $i ?></td>
             <td align="center"><? if($result['date_published'] > 0) echo date($date_format, $result['date_published']); ?></td>
             <td align="center"><?= date($date_format, $result['date_retrieved']) ?></td>
-            <td align="center"><?= '' ?></td>
+            <!--<td align="center">num_identical</td>-->
             <td align="left"><?= $result['api_name'] ?></td>
             <td align="left">
             <? foreach($result['keywords_phrases'] as $keyword_phrase) {
