@@ -199,16 +199,16 @@ class Controller_Results extends Controller {
         //do { // Collect 500 database results at a time to prevent MySQL SELECT failure
             $results_db = $this->model_results->get_results($project_id, $result_params);
             
-            // Count # of docs in each identical/exact cluster & collapse into single meta_id
-            /*
-                create new col in metadata (called num_identical)
+            /* TO DO: enable collapsable "re-tweets" on results basic view 
+                      (Refer to action_cluster_view method for code to do tihs
+                
+                Count # of docs in each identical/exact cluster & collapse into single meta_id
                 (if # docs in cluster sql table != total_results) -> cluster_exact
                 if(cluster_size > 1)
                 calculate # identical for each meta_id (set one as that value -> others as 0)
-                
                 when going through results: if(# identical < 1) -> get other docs in cluster 
-            */
-            /*$clusters_identical = array();
+            
+            $clusters_identical = array();
             //$cluster_data = $this->model_results->get_cluster_summary_exact($project_id, $cluster_id, $params, 0);
             $i = 0;
             $last_cluster_id = 0;
@@ -226,11 +226,9 @@ class Controller_Results extends Controller {
             }*/
             
             $result_params['offset'] += $result_params['limit'];
-            //$num_sub_results = count($results_db);
-            
             foreach($results_db as $row) {
                 
-                // Do not generate full results display (only summary) if displaying 'all' results
+                // Do not generate full results display (only summary) if displaying 'all' results at once
                 if($result_params['num_results'] > 0) {
                     /*if($i > $result_params['num_results'])
                         break;*/
@@ -256,32 +254,6 @@ class Controller_Results extends Controller {
                         $keyword_occurrence_totals[$meta_row['keyword_id']] += $meta_row['num_occurrences'];
                     }
                     $i++;
-                    
-                    /*if(array_key_exists($row['meta_id'], $results)) {
-                        // Add keyword metadata to existing metadata entry
-                        array_push($results[$row['meta_id']]['keywords_phrases'], 
-                        array(
-                            'keyword_id' => $row['keyword_id'],
-                            'keyword' => $keywords_phrases[$row['keyword_id']],
-                            'num_occurrences' => $row['num_occurrences']
-                        ));
-                    } else {
-                        // Add new metadata entry
-                        $results[$row['meta_id']] = array(
-                            'meta_id' => $row['meta_id'],
-                            'url' => $row['url'],
-                            'api_name' => $row['api_name'],
-                            'date_retrieved' => $row['date_retrieved'],
-                            'date_published' => $row['date_published'],
-                            'total_words' => $row['total_words'],
-                            'keywords_phrases' => array(array(
-                                'keyword_id' => $row['keyword_id'],
-                                'keyword' => $row[$keyword_metadata['keyword_id']],
-                                'num_occurrences' => $row['num_occurrences']
-                            ))
-                        );
-                        $i++;
-                    }*/
                 }
             }
             
@@ -543,7 +515,6 @@ class Controller_Results extends Controller {
                 $this->model_results->insert_clusters($cluster_data, $project_id, $time_plot_id);
                 $this->model_results->insert_clusters_exact($cluster_data_exact, $time_plot_id);
             }
-            
         } else {
             $cluster_data = $this->cluster_docs($project_id, $cluster_threshold);
             $cluster_data_exact = $this->cluster_docs($project_id, $this->clusters_threshold_exact); // Generate clusters where each cluster only contains identical documents
@@ -690,13 +661,10 @@ class Controller_Results extends Controller {
                 // Mark as containing "test" negative keyword(s) in database
                 $this->model_results->mark_document($project_id, $meta_id);
                 
-                // If Apply == TRUE -> delete document (from all relevant tables...refer to $model_params->delete_project()
-                // ...
+                if($field_data['negative_keywords_action'] == 'apply')
+                    $this->model_results->delete_keyword_data_all($project_id, $meta_id);
             }
         }
-        
-        // If Apply == TRUE -> add negative keyword(s) to project
-        // ...
     }
     //Returns TRUE if any of the given $negative_keywords exist in given $text 
     private function negative_keyword_exists(Array $negative_keywords, $text)
@@ -758,6 +726,13 @@ class Controller_Results extends Controller {
                 if ($post->check()) {
                     $this->process_negative_keywords($project_id, $this->field_data);
                     $rebuild_chart = 1;
+                    if($this->field_data['negative_keywords_action'] == 'apply') {
+                        $model_params = new Model_Params;
+                        $keywords_phrases_neg = explode(",", $this->field_data['negative_keywords_input']);
+                        $model_params->insert_keywords($project_id, $keywords_phrases_neg, 1);
+                        // Recluster
+                        $this->action_cluster($project_id, $this->default_cluster_threshold, 0, 0, 0, 1);
+                    }
                 }
             } else {
                 // Unmark all documents marked during previous testing (if any exist)
@@ -1116,8 +1091,6 @@ class Controller_Results extends Controller {
             $view->page_content->slider_end_dates = $slider_end_dates;
             $view->page_content->slider = $slider;
             $this->request->response = $view;
-            
-            
         }
     }
     

@@ -34,7 +34,8 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <? if(count($projects) > 0) { ?>
 <p>
 <a href="<?= Url::base(TRUE) ?>params/new" class="button_lg button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-document"></span>New Monitoring Project</a>
-<a href="#" class="button_lg button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-wrench"></span>Settings</a>
+
+<!--<a href="#" class="button_lg button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-wrench"></span>Settings</a>-->
 </p>
 
 <table width="600" border="0" cellspacing="0" cellpadding="5" style="border:1px solid #000;">
@@ -50,7 +51,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             <td align="center">
             <ul id="icons" class="ui-widget ui-helper-clearfix">
                 <li class="button_hover ui-state-default ui-corner-all" title="Results" onclick="location.href='<?= Url::base(TRUE).'results/view/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-signal"></span></li>
-                <li class="button_hover ui-state-default ui-corner-all" title="Gather log" onclick="location.href='<?= Url::base(TRUE).'gather/log/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-note"></span></li>
+                <li class="button_hover ui-state-default ui-corner-all" title="Data collection log" onclick="location.href='<?= Url::base(TRUE).'gather/log/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-note"></span></li>
                 <li class="button_hover ui-state-default ui-corner-all" title="Edit parameters" onclick="location.href='<?= Url::base(TRUE).'params/modify/'.$project['project_id'] ?>'"><span class="ui-icon ui-icon-pencil"></span></li>
                 
                 <li class="button_hover ui-state-default ui-corner-all" title="<?= ($project['active']) ? 'Deactivate project' : 'Activate project' ?>" onclick="location.href='<?= Url::base(TRUE).'home/project_change_state/'.$project['project_id'] ?>'"><span class="ui-icon <?= ($project['active']) ? 'ui-icon-stop' : 'ui-icon-play' ?>"></span></li>

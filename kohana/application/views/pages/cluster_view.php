@@ -67,7 +67,18 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         });
         $('#amount').val("all");
         //$( "#amount" ).val( "$" + $( "#slider" ).slider( "value" ) );
-
+        
+        $('#negative_keywords_test').click(function() {
+            $('#negative_keywords_form').attr('action', '?cluster_order=<?= $cluster_params['order'] ?>&cluster_threshold=<?= $cluster_params['threshold'] ?>');
+            $('#negative_keywords_form').submit();
+        });
+        $('#negative_keywords_apply').click(function() {
+            $('#negative_keywords_action').val('apply');
+            $('#negative_keywords_form').submit();
+        });
+        $('#negative_keywords_cancel').click(function() {
+            $('#recluster_form').submit();
+        });
         // BAD/REDUNDANT CODE
         $('#negative_keywords_input').focus(function () {
             if($(this).val() == "Enter negative keywords...") {
@@ -134,25 +145,27 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 </div>
 
 <div style="position:relative; float:left; width:300px; height:auto;">
-    <form name="test_negative_keywords_form" id="test_negative_keywords_form" method="post" action="<?= Url::base().'index.php/results/cluster_view/'.$project_data['project_id'] ?>">
+    <form name="negative_keywords_form" id="negative_keywords_form" method="post" action="<?= Url::base().'index.php/results/cluster_view/'.$project_data['project_id'] ?>">
     
     <div id="toggle_box" class="ui-widget-content ui-corner-all"> 
     <h3 class="ui-widget-header ui-corner-all">Relevancy optimization tool</h3> 
     <div style="padding:5px;">
-        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keywords...'; ?>"  style="width:190px;">
-        <a href="#" onclick="document.test_negative_keywords_form.submit()" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-arrowreturn-1-e"></span>Test</a>
+        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keywords...'; ?>"  style="width:180px;">
         <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
-        <a href="#" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
+            <a href="#" id="negative_keywords_apply" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
+            <a href="#" id="negative_keywords_cancel" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-closethick"></span>Cancel</a>
+        <? } else { ?>
+            <a href="#" id="negative_keywords_test" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-arrowreturn-1-e"></span>Test</a>
         <? } ?>
+        <br><span style="font-size:11px;">Separate keyword combinations with commas</span>
     </div>
     <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
     <div style="padding:2px;">
         <img src="<?= Kohana::config('myconf.url.images'); ?>cluster_color_gradient_txt.png" width="256" height="53">
     </div>
     <? } ?>
-    <!--<br>&nbsp;<span style="font-size:11px;">Separate keyword combinations with commas</span>
-    <input type="submit" id="apply_btn" name="apply_btn" value="Apply">-->  
-    </div> 
+    </div>
+    <input type="hidden" name="negative_keywords_action" id="negative_keywords_action" value="">
     </form>
 </div>
 

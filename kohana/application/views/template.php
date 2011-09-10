@@ -61,5 +61,8 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <?= $page_content ?>
 </div>
 
+<div style="clear:both;"></div>
+<div id="footer">ImpactProbe &copy; <?= date("Y") ?> &#124; <a href="https://github.com/alaurenz/ImpactProbe" target="_blank">GitHub repository</a></div>
+
 </body>
 </html>

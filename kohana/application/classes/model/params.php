@@ -37,7 +37,9 @@ class Model_Params extends Model {
     public function delete_project($project_id)
     {
         // Delete all database entries related to project
-        DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
+        DB::Query(Database::DELETE, "DELETE FROM doc_clusters,doc_clusters_exact USING doc_clusters INNER JOIN doc_clusters_exact WHERE (doc_clusters.project_id = $project_id AND doc_clusters.meta_id = doc_clusters_exact.meta_id)")->execute();
+        DB::Query(Database::DELETE, "DELETE FROM doc_clusters_time,doc_clusters_time_exact USING doc_clusters_time INNER JOIN doc_clusters_time_exact WHERE (doc_clusters_time.project_id = $project_id AND doc_clusters_time.meta_id = doc_clusters_time_exact.meta_id)")->execute();
+        DB::delete('mark_negative_keywords')->where('project_id','=',$project_id)->execute();
         DB::delete('active_api_sources')->where('project_id','=',$project_id)->execute();
         DB::delete('rss_feeds')->where('project_id','=',$project_id)->execute();
         DB::delete('gather_log')->where('project_id','=',$project_id)->execute();
@@ -53,7 +55,9 @@ class Model_Params extends Model {
         $this->remove_dir(Kohana::config('myconf.lemur.indexes')."/$project_id");
         $this->remove_dir(Kohana::config('myconf.lemur.docs')."/$project_id");
         $this->remove_dir(Kohana::config('myconf.lemur.params')."/$project_id");
-        $this->remove_file(Kohana::config('myconf.path.charts')."/cluster_$project_id.gch");
+        $this->remove_dir(Kohana::config('myconf.path.charts')."/cluster_$project_id");
+        $this->remove_dir(Kohana::config('myconf.path.charts')."/cluster_time_$project_id");
+        $this->remove_dir(Kohana::config('myconf.path.charts')."/cluster_default_$project_id");
     }
     private function remove_dir($dir) 
     {

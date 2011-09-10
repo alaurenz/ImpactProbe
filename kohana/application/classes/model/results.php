@@ -288,4 +288,23 @@ class Model_Results extends Model {
     {
         return DB::select()->from('cluster_log')->where('project_id','=',$project_id)->limit(1)->execute()->as_array();
     }
+
+    public function delete_keyword_data_all($project_id, $meta_id)
+    {
+        $this->remove_file(Kohana::config('myconf.lemur.docs')."/$project_id/$meta_id.txt");
+        DB::delete('keyword_metadata')->where('meta_id','=',$meta_id)->execute();
+        DB::delete('cached_text')->where('meta_id','=',$meta_id)->execute();
+        DB::Query(Database::DELETE, "DELETE FROM metadata,metadata_urls USING metadata INNER JOIN metadata_urls WHERE (metadata.meta_id = $meta_id AND metadata.url_id = metadata_urls.url_id)")->execute();
+    }
+    private function remove_file($file) 
+    {
+        if(file_exists($file)) {
+            $system_cmd = "rm $file";
+            system($system_cmd, $return_code);
+            if($return_code != 0) {
+                echo 'Error when running command &lt;'.$system_cmd.'&gt;: '.$return_code.'<br><a href="'.Url::base().'">&laquo; Back</a>'; 
+                exit;
+            }
+        }
+    }
 }

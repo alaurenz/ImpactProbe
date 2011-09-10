@@ -255,7 +255,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
         <br>
         <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-        <? if(array_key_exists('keywords_phrases', $field_data)) { 
+        <? if(array_key_exists('keywords_phrases', $field_data)) {
                 foreach($field_data['keywords_phrases'] as $keyword_phrase_id) {
                     if(array_key_exists($keyword_phrase_id, $field_data['keyword_phrase_data'])) {
                         $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
@@ -301,7 +301,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
                             echo '<option value="'.$negative_keyword.'">'.$negative_keyword.'</option>';
                         } elseif($mode == "Modify") {
                             // $negative_keyword is the keyword_id
-                            if(array_key_exists($negative_keyword, $field_data['negative_keywords'])) {
+                            if(array_key_exists($negative_keyword, $field_data['keyword_phrase_data'])) {
                                 $quotes = ($field_data['keyword_phrase_data'][$negative_keyword]['exact_phrase']) ? '"' : '';
                                 echo '<option value="'.$negative_keyword.'">'.$quotes.$field_data['keyword_phrase_data'][$negative_keyword]['keyword_phrase'].$quotes.'</option>';
                             } else {
