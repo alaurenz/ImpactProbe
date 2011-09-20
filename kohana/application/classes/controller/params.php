@@ -186,12 +186,12 @@ class Controller_Params extends Controller {
                     $this->model_params->update_keywords($updated_keywords_phrases);
                     
                     // Add newly added negative keywords and remove those that were deleted
+                    $negative_keywords = $this->model_params->get_negative_keywords($project_id);
+                    foreach ($negative_keywords as $keyword_id) {
+                        if(!array_key_exists('negative_keywords', $this->field_data) OR !in_array($keyword_id, $this->field_data['negative_keywords']))
+                            $this->model_params->remove_keyword($keyword_id);
+                    }
                     if(array_key_exists('negative_keywords', $this->field_data)) {
-                        $negative_keywords = $this->model_params->get_negative_keywords($project_id);
-                        foreach ($negative_keywords as $keyword_id) {
-                            if(!in_array($keyword_id, $this->field_data['negative_keywords']))
-                                $this->model_params->remove_keyword($keyword_id);
-                        }
                         $new_keywords_phrases = array();
                         foreach ($this->field_data['negative_keywords'] as $negative_keyword) {
                             if(!($negative_keyword > 0))

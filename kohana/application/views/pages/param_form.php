@@ -317,7 +317,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 
 </div>
 
-<p><b>Enable/Disable Data Source APIs</b><br>
+<p><b>Enable/Disable Data Sources</b><br>
 <? $rss_feed_chkbox_html = "";
 foreach($api_sources as $api_source) { 
     $chkbox_html = '<label for="api_'.$api_source['gather_method_name'].'"><input name="api_'.$api_source['gather_method_name'].'" id="api_'.$api_source['gather_method_name'].'" type="checkbox" value="1"'; 
@@ -385,7 +385,7 @@ $preloaded_rss_feeds_html .= '</optgroup>
     <td colspan="4" align="left">
         <div style="height:45px;">
         <b>Pre-loaded RSS Feeds</b><br>
-        <i>Some text description here...</i>
+        <i>Please suggest RSS feeds to be added here</i>
         </div>
         <?= $preloaded_rss_feeds_html ?>
     </td>

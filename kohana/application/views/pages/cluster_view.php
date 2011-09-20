@@ -165,7 +165,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         <? } else { ?>
             <a href="#" id="negative_keywords_test" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-arrowreturn-1-e"></span>Test</a>
         <? } ?>
-        <br><span style="font-size:11px;">Separate keyword combinations with commas</span>
+        <br><span style="font-size:11px;">Separate negative keyword combinations with commas</span>
         <br><label for="hide_unaffected"><input name="hide_unaffected" id="hide_unaffected" type="checkbox" value="1"<? if(array_key_exists('hide_unaffected', $field_data)) echo ' checked'; ?>> Hide clusters that are not affected</label>
     </div>
     
