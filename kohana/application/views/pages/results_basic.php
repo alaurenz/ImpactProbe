@@ -73,14 +73,7 @@ Date:
 <input type="text" class="datepicker" id="date_from" name="date_from" size="11" value="<?= $field_data['date_from'] ?>">
 &#045;
 <input type="text" class="datepicker" id="date_to" name="date_to" size="11" value="<?= $field_data['date_to'] ?>">
-
-<!--&nbsp;&nbsp;
-Order:
-<select name="order">
-   <option value="desc" <? if($field_data['order'] == 'desc') { echo("selected"); } ?>>most recent</option>
-   <option value="asc" <? if($field_data['order'] == 'asc') { echo("selected"); } ?>>oldest</option>
-</select>-->
-&nbsp;&nbsp;
+&nbsp;
 Show:
 <select name="num_results">
   <option value="25" <? if($field_data['num_results'] == 25) { echo("selected"); } ?>>25</option>
@@ -90,7 +83,7 @@ Show:
   <option value="500" <? if($field_data['num_results'] == 500) { echo("selected"); } ?>>500</option>
   <!--<option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>-->
 </select>
-&nbsp;&nbsp;
+
 <input type="submit" name="Submit" value="View">
 <input type="reset" name="Reset" value="Reset" onClick="window.location.reload()">
 <input type="hidden" id="sort_by" name="sort_by" value="<?= $field_data['sort_by'] ?>">

@@ -97,7 +97,7 @@ class Controller_Gather extends Controller {
         
         // Add single or exact phrase negative keywords to query string
         // NOTE: mutiple non-exact negative keywords are not supported by Twitter API as with
-        // regular keywords, this type of negative keyword filtering will be performed later 
+        // regular keywords, this type of negative keyword filtering is performed later 
         $neg_keywords_str = "";
         foreach($this->negative_keywords as $negative_keyword) {
             $word_split = explode(" ", $negative_keyword['keyword_phrase']);
@@ -226,25 +226,6 @@ class Controller_Gather extends Controller {
                 break;
             }
         }
-        
-        /* OLD:
-        foreach($this->keywords_phrases as $keyword_phrase) {
-            $i++;
-            $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
-            if(count($word_split) > 1) { // Is phrase (more than 1 word)
-                // Check if searching "exact phrase" -> if so add quotes
-                if($keyword_phrase['exact_phrase'])
-                    $keyword_str .= '"'.urlencode($keyword_phrase['keyword_phrase']).'"';
-                else
-                    $keyword_str .= '('.urlencode($keyword_phrase['keyword_phrase']).')';
-            } 
-            else { // Is single keyword
-                $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
-            }
-            if($i < $num_keywords) {
-                $keyword_str .= '+OR+';
-            }
-        } */
         
         foreach($rss_feeds as $rss_feed) {
             $i = 0;

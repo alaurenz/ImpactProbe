@@ -28,7 +28,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         var data = new google.visualization.DataTable();
         <?= $chart_data_js ?>
         var chart = new google.visualization.AnnotatedTimeLine(document.getElementById('chart_div'));
-        chart.draw(data, {displayAnnotations: true, 'dateFormat': '<?= $date_format_chart ?>'});
+        chart.draw(data, {displayAnnotations: false, dateFormat: '<?= $date_format_chart ?>', wmode: 'opaque'});
     }
 </script>
 
@@ -47,13 +47,13 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <? } ?>
 
 <div class="ui-widget">
-<div class="ui-state-default ui-corner-all" style="position:relative; z-index: 2; margin-top: 10px; padding: 0 .7em; padding:3px;"> 
+<div class="ui-state-default ui-corner-all" style="position:relative; margin-top: 10px; padding: 0 .7em; padding:3px;"> 
 &nbsp;
 Date:
 <input type="text" class="datepicker" id="date_from" name="date_from" size="11" value="<?= $field_data['date_from'] ?>">
 &#045;
 <input type="text" class="datepicker" id="date_to" name="date_to" size="11" value="<?= $field_data['date_to'] ?>">
-&nbsp;&nbsp;
+&nbsp; Show:
 <select name="display_mode">
   <option value="consensus" <? if($field_data['display_mode'] == "consensus") { echo("selected"); } ?>>consensus</option>
   <option value="by_keyword" <? if($field_data['display_mode'] == "by_keyword") { echo("selected"); } ?>>by keyword</option>
@@ -65,11 +65,12 @@ Date:
 </div>
 </div>
 
-<b>NOTE:</b> the &quot;consensus&quot; value represents the total number of entries found which contain any of the search keywords. So when viewing the results broken down by individual keywords the total of those values does not necessarily represent the consensus value (because a single entry may contain multiple keywords).
+<span style="color:#0000FF;"><b>NOTE:</b>
+<?= ($field_data['display_mode'] == "consensus")
+? 'The &quot;consensus&quot; value is the total number of documents found which contain <i>any</i> of the search keywords.' : 'You are viewing the results broken down by individual keywords so the totals of those values do not necessarily represent the &quot;consensus&quot; values (because a single document will be counted more than once if it contains multiple keywords).' ?>
+</span>
 </form>
 
-<div style="position:relative; z-index: 10;">
-<div id="chart_div" style="position:relative; z-index: 1; <?= $chart_dimensions ?>"></div>
-</div>
+<div id="chart_div" style="position:relative; z-index:1; <?= $chart_dimensions ?>"></div>
 
 <p><a href="<?= Url::base(TRUE).'results/view/'.$project_data['project_id'] ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a></p>

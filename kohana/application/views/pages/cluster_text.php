@@ -89,17 +89,19 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         </div>
         <? } ?>
 
-        <b>Show: </b>
+        <!--<b>Show: </b>
         <select name="num_results">
         <option value="10" <? if($field_data['num_results'] == 10) { echo("selected"); } ?>>10</option>
         <option value="25" <? if($field_data['num_results'] == 25) { echo("selected"); } ?>>25</option>
         <option value="50" <? if($field_data['num_results'] == 50) { echo("selected"); } ?>>50</option>
         <option value="100" <? if($field_data['num_results'] == 100) { echo("selected"); } ?>>100</option>
         <option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>
-        </select>
+        </select>-->
+        
+        <b>Order:</b> 
         <select name="score_order">
-        <option value="desc" <? if($field_data['score_order'] == 'desc') { echo("selected"); } ?>>most representative</option>
-        <option value="asc" <? if($field_data['score_order'] == 'asc') { echo("selected"); } ?>>least representative</option>
+        <option value="desc" <? if($field_data['score_order'] == 'desc') { echo("selected"); } ?>>most representative first</option>
+        <option value="asc" <? if($field_data['score_order'] == 'asc') { echo("selected"); } ?>>least representative first</option>
         </select>
         <input type="submit" name="Submit" value="View">
         </form><? 

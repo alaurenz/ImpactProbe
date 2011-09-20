@@ -30,7 +30,7 @@ class Model_Results extends Model {
     
     public function get_keywords_phrases($project_id)
     {
-        $result = DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->execute()->as_array();
+        $result = DB::select()->from('keywords_phrases')->where('is_negative','=',0)->where('project_id','=',$project_id)->execute()->as_array();
         foreach($result as $keyword_phrase) {
             // Add quotes if necessary
             $keyword_phrase_q = ($keyword_phrase['exact_phrase']) ? '"'.$keyword_phrase['keyword_phrase'].'"' : $keyword_phrase['keyword_phrase'];

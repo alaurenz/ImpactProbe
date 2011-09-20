@@ -95,6 +95,11 @@ Show:
                 <h3><a href="#"><?= date(Kohana::config('myconf.date_format'), $result['date']) ?> (<?= count($result['queries']) ?> queries)</a></h3>
                 <div style="font-size:11px; padding:0;">
                 <table width="100%" border="0" cellspacing="0" cellpadding="5">
+                    <tr>
+                        <td align="left">&nbsp;</td>
+                        <td align="left"><b>Query</b></td>
+                        <td align="center"><b>&#035; of results</b></td>
+                    </tr>
                     <? $i = 1; 
                     foreach($result['queries'] as $query) { ?>
                     <tr class="<? 
@@ -117,5 +122,5 @@ Show:
 <?  echo $page_links; 
 } ?>
 </p>
-
+<br>
 <a href="<?= Url::base() ?>" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-circle-arrow-w"></span>Back</a>

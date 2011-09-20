@@ -821,6 +821,9 @@ class Controller_Results extends Controller {
                 
                 foreach($clusters as $cluster_id => $cluster_data) {
                     if($cluster_data['num_docs'] > 1) {
+                        if(array_key_exists('hide_unaffected', $this->field_data) AND $cluster_data['num_marked'] == 0)
+                            continue;
+                        
                         $num_clusters++;
                         
                         // Normalize dot sizes they are between 0-100

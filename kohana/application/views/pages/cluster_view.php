@@ -73,21 +73,29 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             $('#negative_keywords_form').submit();
         });
         $('#negative_keywords_apply').click(function() {
-            $('#negative_keywords_action').val('apply');
-            $('#negative_keywords_form').submit();
+            if(confirm("Are you sure you want to apply the negative keyword(s)?\nWARNING: all data marked for deletion will be permanently deleted.")) {
+                $('#negative_keywords_action').val('apply');
+                $('#negative_keywords_form').submit();
+            }
         });
         $('#negative_keywords_cancel').click(function() {
             $('#recluster_form').submit();
         });
+        <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
+        $('#hide_unaffected').click(function() {
+            $('#negative_keywords_form').submit();
+        });
+        <? } ?>
+        
         // BAD/REDUNDANT CODE
         $('#negative_keywords_input').focus(function () {
-            if($(this).val() == "Enter negative keywords...") {
+            if($(this).val() == "Enter negative keyword(s)...") {
                 $(this).attr('value', '');
             } 
         });
         $('#negative_keywords_input').focusout(function () {
             if(!$(this).val()) {
-                $(this).attr('value', 'Enter negative keywords...');
+                $(this).attr('value', 'Enter negative keyword(s)...');
             } 
         });
         // END BAD/REDUNDANT CODE
@@ -144,24 +152,26 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <? } ?>
 </div>
 
-<div style="position:relative; float:left; width:300px; height:auto;">
+<div style="position:relative; float:left; width:310px; height:auto;">
     <form name="negative_keywords_form" id="negative_keywords_form" method="post" action="<?= Url::base().'index.php/results/cluster_view/'.$project_data['project_id'] ?>">
     
     <div id="toggle_box" class="ui-widget-content ui-corner-all"> 
     <h3 class="ui-widget-header ui-corner-all">Relevancy optimization tool</h3> 
-    <div style="padding:5px;">
-        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keywords...'; ?>"  style="width:180px;">
-        <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
+    <div style="padding-top:5px;">
+        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keyword(s)...'; ?>"  style="width:180px; font-size:12px;"<? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') echo ' readonly="readonly"'; ?>>
+        <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
             <a href="#" id="negative_keywords_apply" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
             <a href="#" id="negative_keywords_cancel" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-closethick"></span>Cancel</a>
         <? } else { ?>
             <a href="#" id="negative_keywords_test" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-arrowreturn-1-e"></span>Test</a>
         <? } ?>
         <br><span style="font-size:11px;">Separate keyword combinations with commas</span>
+        <br><label for="hide_unaffected"><input name="hide_unaffected" id="hide_unaffected" type="checkbox" value="1"<? if(array_key_exists('hide_unaffected', $field_data)) echo ' checked'; ?>> Hide clusters that are not affected</label>
     </div>
-    <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keywords...') { ?>
-    <div style="padding:2px;">
-        <img src="<?= Kohana::config('myconf.url.images'); ?>cluster_color_gradient_txt.png" width="256" height="53">
+    
+    <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
+    <div style="width:305px; padding-left:10px; padding-top:5px;">
+        <img src="<?= Kohana::config('myconf.url.images'); ?>negative_keywords_gradient.gif" width="305" height="54">
     </div>
     <? } ?>
     </div>
