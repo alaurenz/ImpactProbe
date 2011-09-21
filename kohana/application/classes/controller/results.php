@@ -658,7 +658,7 @@ class Controller_Results extends Controller {
             $cached_text = $this->model_results->get_cached_text($meta_id);
             
             if($this->negative_keyword_exists($negative_keywords, $cached_text)) {
-                // Mark as containing "test" negative keyword(s) in database
+                // Mark document as containing "test" negative keyword(s)
                 $this->model_results->mark_document($project_id, $meta_id);
                 
                 if($field_data['negative_keywords_action'] == 'apply')
@@ -746,7 +746,6 @@ class Controller_Results extends Controller {
             } // END negative keyword processing
             
             // re-cluster if NOT default settings
-            //if(!array_key_exists('just_clustered', $_GET) AND ($cluster_params['threshold'] != $this->default_cluster_threshold OR $cluster_params['order'] != $cluster_log['order']))
             if($cluster_params['threshold'] != $this->default_cluster_threshold OR $cluster_params['order'] != $cluster_log['order'])
                 $this->action_cluster($project_id, $cluster_params['threshold'], 0, 0, 0, 0);
                 

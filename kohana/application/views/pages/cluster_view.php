@@ -23,9 +23,8 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 <script type="text/javascript">
     $(document).ready(function(){
         $('#recluster_form').submit(function() {
-            // Validate threshold value
-            if(!isNumeric($('#cluster_threshold').val())) {
-                alert("Threshold is invalid.");
+            if(!isNumeric($('#cluster_threshold').val()) || $('#cluster_threshold').val() < 0 || $('#cluster_threshold').val() > 1) {
+                alert("Threshold is invalid. You must enter a number between 0 and 1.");
                 return false;
             }
             var submit_btn = "#submit_btn";
@@ -66,7 +65,6 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
             }
         });
         $('#amount').val("all");
-        //$( "#amount" ).val( "$" + $( "#slider" ).slider( "value" ) );
         
         $('#negative_keywords_test').click(function() {
             $('#negative_keywords_form').attr('action', '?cluster_order=<?= $cluster_params['order'] ?>&cluster_threshold=<?= $cluster_params['threshold'] ?>');
@@ -83,6 +81,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         });
         <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
         $('#hide_unaffected').click(function() {
+            $('#negative_keywords_form').attr('action', '?cluster_order=<?= $cluster_params['order'] ?>&cluster_threshold=<?= $cluster_params['threshold'] ?>');
             $('#negative_keywords_form').submit();
         });
         <? } ?>
@@ -158,7 +157,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <div id="toggle_box" class="ui-widget-content ui-corner-all"> 
     <h3 class="ui-widget-header ui-corner-all">Relevancy optimization tool</h3> 
     <div style="padding-top:5px;">
-        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value="<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keyword(s)...'; ?>"  style="width:180px; font-size:12px;"<? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') echo ' readonly="readonly"'; ?>>
+        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value='<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keyword(s)...'; ?>'  style="width:180px; font-size:12px;"<? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') echo ' readonly="readonly"'; ?>>
         <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
             <a href="#" id="negative_keywords_apply" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
             <a href="#" id="negative_keywords_cancel" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-closethick"></span>Cancel</a>
