@@ -179,7 +179,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 </div>
 
 <div style="position:relative; padding-top:5px; float:left; width:800px;">
-    <? if($slider['step'] != 0 AND $slider['max'] > ($slider['increments']*$slider['step'])) { ?>
+    <? if($slider['max'] > ($slider['increments']*$slider['step'])) { ?>
     <div style="position:relative; width:760px; height:36px;"> 
         <div id="slider_text"> 
         <label for="amount">Hide clusters with more than </label> 

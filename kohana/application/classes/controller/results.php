@@ -779,6 +779,8 @@ class Controller_Results extends Controller {
             if($max_cluster_size < $this->max_slider_value)
                 $slider['max'] = ceil($max_cluster_size/10)*10; // Ceil to nearest 10
             $slider['step'] = round((($slider['max'] / $this->slider_increments)/5),0)*5; // Round to nearest 5
+            if($slider['step'] == 0)
+                $slider['step'] = 1;
             
             // Overflow check...
             $actual_slider_max = 5 + $slider['step']*$this->slider_increments;
