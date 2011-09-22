@@ -71,6 +71,15 @@ html, body {
 
 .table_header { background:#0000A9; color:#FFFFFF; }
 
+/* tutorials */
+#tutorials_menu {
+    position:relative; overflow:hidden; float:right; margin-right:50px; width:260px; height:35px; border-left:1px solid #000; border-right:1px solid #000; border-bottom:1px solid #000; padding:5px; font-size:13px; background:#FFFFFF; z-index:999;
+}
+#tutorials_menu .icon { position:relative; float:left; width:25px; height:25px; padding:3px; }
+#tutorials_menu .title { position:relative; float:left; width:215px; padding-left:5px; padding-top:8px; }
+#tutorials_menu .text { position:relative; float:left; width:215px; height:25px; padding-left:5px; }
+#tutorials_menu .links { position:relative; float:left; width:250px; margin-top:10px; padding:6px; }
+
 /* Buttons/UI */
 .button_noicon {cursor:pointer; padding: .4em .8em .4em 11px;text-decoration: none;position: relative; font-size:13px;}
 .button_noicon_sm {padding: .2em .5em .2em 7px;text-decoration: none;position: relative; font-size:12px;}

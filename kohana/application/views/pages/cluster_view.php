@@ -100,6 +100,16 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         // END BAD/REDUNDANT CODE
     });
     
+    function disableEnterKey(e)
+    {
+        var key;
+        if(window.event)
+            key = window.event.keyCode; //IE
+        else
+            key = e.which; //firefox
+        return (key != 13);
+    }
+    
     function isNumeric(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
@@ -157,7 +167,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     <div id="toggle_box" class="ui-widget-content ui-corner-all"> 
     <h3 class="ui-widget-header ui-corner-all">Relevancy optimization tool</h3> 
     <div style="padding-top:5px;">
-        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" value='<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keyword(s)...'; ?>'  style="width:180px; font-size:12px;"<? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') echo ' readonly="readonly"'; ?>>
+        <input class="ui-state-default ui-corner-all" name="negative_keywords_input" type="text" id="negative_keywords_input" onKeyPress="return disableEnterKey(event)" value='<?= ($field_data['negative_keywords_input']) ? $field_data['negative_keywords_input'] : 'Enter negative keyword(s)...'; ?>'  style="width:180px; font-size:12px;"<? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') echo ' readonly="readonly"'; ?>>
         <? if($field_data['negative_keywords_input'] != '' AND $field_data['negative_keywords_input'] != 'Enter negative keyword(s)...') { ?>
             <a href="#" id="negative_keywords_apply" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-check"></span>Apply</a>
             <a href="#" id="negative_keywords_cancel" class="button_sm button_hover ui-state-default ui-corner-all"><span class="ui-icon ui-icon-closethick"></span>Cancel</a>

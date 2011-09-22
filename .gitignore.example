@@ -15,4 +15,4 @@ data/lemur/params/*
 !data/lemur/indexes/.dir_placeholder
 !data/lemur/params/.dir_placeholder
 
-index.php
+/index.php
