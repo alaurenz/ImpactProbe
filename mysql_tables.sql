@@ -264,6 +264,11 @@ CREATE TABLE `preloaded_rss_feeds` (
   PRIMARY KEY (`feed_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
 
+INSERT INTO `preloaded_rss_feeds` (`feed_id`, `cat_id`, `feed_name`, `is_searchable`, `url`) VALUES
+(1, 2, 'Google News', 1, 'Searchable: http://news.google.com/news?hl=en&safe=off&um=1&ie=UTF-8&output=rss&q='),
+(2, 2, 'New York Times', 0, 'http://feeds.nytimes.com/nyt/rss/HomePage'),
+(3, 1, 'Something', 0, 'http://www.something.com/rss');
+
 -- --------------------------------------------------------
 
 --
@@ -275,6 +280,10 @@ CREATE TABLE `preloaded_rss_feed_cats` (
   `cat_name` varchar(100) NOT NULL,
   PRIMARY KEY (`cat_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+
+INSERT INTO `preloaded_rss_feed_cats` (`cat_id`, `cat_name`) VALUES
+(1, 'Other'),
+(2, 'News');
 
 -- --------------------------------------------------------
 
