@@ -1,4 +1,4 @@
-Last updated: June 10, 2011
+Last updated: January 31, 2011
 
 ImpactProbe is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
@@ -203,7 +203,8 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 1.1.5 Setting up the Lemur Toolkit
 ----------------------------------------
 
-Download Lemur here: http://sourceforge.net/projects/lemur/
+Download the Lemur Toolkit here: 
+https://sourceforge.net/projects/lemur/files/lemur/lemur-toolkit-4.12/
 Untar the package and follow the instructions provided in the Lemur INSTALL file 
 to install the software. Be sure to include the --enable-cluster option when 
 running the configure script. Take note of the path where Lemur was installed 
