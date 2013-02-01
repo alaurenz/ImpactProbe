@@ -203,7 +203,7 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 1.1.5 Setting up the Lemur Toolkit
 ----------------------------------------
 
-Download the Lemur Toolkit here: 
+Download the Lemur Toolkit (version 4.12) here: 
 https://sourceforge.net/projects/lemur/files/lemur/lemur-toolkit-4.12/
 Untar the package and follow the instructions provided in the Lemur INSTALL file 
 to install the software. Be sure to include the --enable-cluster option when 
