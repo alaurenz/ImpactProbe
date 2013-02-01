@@ -154,17 +154,10 @@ NOTE: You may need to switch "short_open_tag = On" in your PHP.ini configuration
 file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
 
 For your convenience we have included the Kohana PHP Framework version 3.0.7
-in this software package. It is likely that a newer version of Kohana is 
-available so if you wish to have the most up-to-date version of Kohana you can 
-download it from their website: http://kohanaframework.org. If you choose to do 
-this you should follow the installation guide on the Kohana website and then 
-copy the entire ~/application directory from this package into your Kohana root
-directory (replace the application directory that comes with Kohana). After
-doing this follow steps (1) and (5) below.
-
-Instructions for setting up Kohana 3.0.7 (included in this package) are 
-described below according to those described in official Kohana installation 
-guide found on their website: http://kohanaframework.org/guide/about.install
+in this software package. Instructions for setting up Kohana 3.0.7 (included 
+in this package) are described below according to those described in official 
+Kohana installation guide found on their website: 
+http://kohanaframework.org/guide/about.install
 
 (1) Open ~/kohana/application/bootstrap.php.example and make the following 
     changes:
