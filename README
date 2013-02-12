@@ -1,4 +1,4 @@
-Last updated: January 31, 2011
+Last updated: February 12, 2011
 
 ImpactProbe is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
@@ -228,6 +228,10 @@ command to the full path to your php executable (typically this is
 To display your crontab issue this command:
     
     crontab -l
+
+Some systems may not execute the script unless you specify the full path to php
+and use the -q flag. For example, instead of simply calling php, use something like:
+/usr/local/bin/php -q <COMMAND>
 
 NOTE: You should be aware that any command scheduled to run at a time when the 
 computer is turned off will not be executed. Cron can make up for missed 
