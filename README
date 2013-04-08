@@ -197,7 +197,7 @@ http://kohanaframework.org/guide/about.install
 NOTE: by default Kohana is configured to be in 'development' mode so if you plan
 to make this application available on a public web server for security reasons
 you should put Kohana in 'production' mode:
-http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
+http://kohanaframework.org/3.0/guide/kohana/security/deploying
 
 
 1.1.5 Setting up the Lemur Toolkit
